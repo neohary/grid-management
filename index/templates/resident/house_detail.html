@@ -1,0 +1,721 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>住户详情 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'house-list-html' %}" style="text-decoration: none;">住户总览 </a>
+        <span> > </span>
+        <span> 住户详情</span>
+        <span id="house-name-display" class="h4"></span>
+    </h2>
+</div>
+
+<div class="px-lg-5">
+    <div class="form-group py-2" id="form-village">
+        <label for="form-village-input">
+            <h4>村庄</h4>
+        </label>
+        <select id="form-village-input" class="form-select"></select>
+        <div class="invalid-feedback"></div>
+    </div>
+    <div class="form-group py-2" id="form-mgrid">
+        <label for="form-mgrid-input">
+            <h4>微网格</h4>
+        </label>
+        <select id="form-mgrid-input" class="form-select"></select>
+        <div class="invalid-feedback"></div>
+    </div>
+    <div class="form-group py-2" id="form-sort">
+        <label for="form-sort-input">
+            <h4>户号</h4>
+        </label>
+        <input type="number" id="form-sort-input" class="form-control" aria-describedby="sorthelp">
+        <small id="sorthelp" class="form-text text-muted">留空则自动分配</small>
+        
+    </div>
+
+    <div class="py-2 d-grid">
+        <button class="btn btn-success btn-lg" id="submit">更新信息</button>
+    </div>
+
+    <div class="py-2">
+        <label for="table">
+            <h4>成员</h4>
+        </label>
+        <table id="table" data-page-list="5" data-show-footer="true">
+
+        </table>
+    </div>
+    
+</div>
+
+<script>
+    $(document).ready(function(){
+        //$('#toast').toast('hide');
+        load_form()
+        resetGlobalParams()
+    })
+    function load_form(){
+        load_village()
+        load_house_data()
+        load_resident_table()
+        villageListener()
+        mgridListener()
+        sortListener()
+        submitLisitener()
+    }
+    function load_village(){
+        $.ajax({
+            async:false,
+            url:"/api/village/get_by_permission/",
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                $('#form-village-input').empty()
+                data.villages.forEach(element => {
+                    var option = document.createElement("option")
+                    option.setAttribute('value',element.id)
+                    option.innerText = element.name
+                    $('#form-village-input').append(option)
+                });
+            },
+            error:(error) => {
+                console.log(error)
+            }
+        })
+    }
+
+    
+    var holder_data,village_id
+
+    function load_house_data(){
+        $.ajax({
+            url:"/api/houses/{{pk}}/",
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                document.title = data.house_name + " - {{title}}"
+                globalThis.holder_data = data.holder
+                $('#house-name-display').text(data.house_name)
+                $('#form-village-input').val(data.village)
+                //console.log($('#form-village-input').val())
+                village_id = data.village
+                //console.log(village_id)
+                $('#form-mgrid-input').val(data.mgrid)
+                globalThis.mgrid_data = data.mgrid
+                $('#form-sort-input').val(data.mgridID)
+                globalThis.sort_data = data.mgridID
+                $('#form-village-input').trigger('change')
+            },
+            error:(error) => {
+                //console.log(error)
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("网络异常，请重试 "+error['statusText'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    $('#form-village-input').on('change',function(){
+        //console.log("vid from onChange " + village_id)
+        $.ajax({
+            async:false,
+            url:"/api/village/"+village_id+"/get_mgrids/",
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                $('#form-mgrid-input').empty()
+                data.mgrids.forEach(element => {
+                    var option = document.createElement('option')
+                    option.setAttribute('value',element.id)
+                    option.innerText = element.name
+                    $('#form-mgrid-input').append(option)
+                });
+            },
+            error:(error) => {
+                //console.log(error)
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("数据加载异常，请刷新页面重试 "+error['statusText'])
+                $('#toast').toast('show');
+            }
+        });
+    })
+
+    var village_data,
+        mgrid_data,
+        sort_data
+
+    function villageListener() {
+        $('#form-village-input').on('change',function(){
+            $(this).removeClass('is-invalid')
+            globalThis.village_data = $(this).val()
+        })
+    }
+
+    function mgridListener(){
+        $('#form-mgrid-input').on('change',function(){
+            if($(this).val() != ''){
+                $(this).removeClass('is-invalid')
+                globalThis.mgrid_data = $(this).val()
+            }
+        })
+    }
+
+    function sortListener(){
+        $('#form-sort-input').blur(function(){
+            globalThis.sort_data = $(this).val()
+        })
+    }
+
+    function resetGlobalParams(){
+        globalThis.village_data = ''
+        globalThis.mgrid_data = ''
+        globalThis.sort_data = ''
+    }
+
+    function submitLisitener(){
+        $('#submit').on('click',function(){
+            console.log(globalThis.village_data)
+            console.log(globalThis.mgrid_data)
+            console.log(globalThis.sort_data)
+            if(globalThis.village_data != ''){
+                if(globalThis.mgrid_data != ''){
+                    var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+                    var p_data = {}
+                    p_data['village'] = globalThis.village_data
+                    p_data['mgrid'] = globalThis.mgrid_data
+                    if(globalThis.sort_data != ''){
+                        p_data['mgridID'] = globalThis.sort_data
+                    }else{
+                        p_data['mgridID'] = 'auto'
+                    }
+                    $.ajax({
+                        url:'/api/houses/{{pk}}/',
+                        type:"PUT",
+                        dataType:"json",
+                        data: JSON.stringify(p_data),
+                        contentType: 'application/json; charset=UTF-8',
+                        headers:{
+                            "X-CSRFToken": CSRFtoken,
+                        },
+                        success:(data) => {
+                            resetGlobalParams()
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-success text-success')
+                            $('#toast .toast-body').text("更新成功")
+                            $('#toast').toast('show');
+                            window.location.reload();
+                        },
+                        error:(error) => {
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-danger text-danger')
+                            $('#toast .toast-body').text("更新失败："+error.responseJSON.message)
+                            $('#toast').toast('show');
+                        }
+                    })
+                }else{
+                    $('#form-mgrid .invalid-feedback').text("微网格信息无效")
+                    $('#form-mgrid').removeClass('is-invalid')
+                        .addClass('is-invalid')
+                }
+            }else{
+                $('#form-village .invalid-feedback').text("村庄信息无效")
+                $('#form-village').removeClass('is-invalid')
+                    .addClass('is-invalid')
+            }
+        })
+        
+    }
+
+    function get_bool(bool){
+        var badgediv = document.createElement('span')
+        var badge = document.createElement('i')
+        if(bool == false){
+            badgediv.classList.add('bg-danger','badge','rounded-circle','d-flex','justify-content-center')
+            badge.classList.add('fa-solid','fa-xmark','align-self-center')
+        }else{
+            badgediv.classList.add('bg-success','rounded','badge','rounded-circle','d-flex','justify-content-center')
+            badge.classList.add('fa-solid','fa-check','align-self-center')
+        }
+        badgediv.style.setProperty('width',"24px")
+        badgediv.style.setProperty('height',"24px")
+        badgediv.appendChild(badge)
+        return badgediv.outerHTML
+    }
+
+    function holder_check(id,name){
+        if(id == globalThis.holder_data){
+            return [
+                name + "<i id='holdertip' class='px-lg-1 text-warning fa-solid fa-star' data-toggle='tooltip' data-placement='top' title='户主'></i>"
+            ].join('')
+        }else{
+            return name
+        }
+    }
+
+    function optionFormatter(id,index){
+        var optdiv = document.createElement('div')
+        var btn = document.createElement('button')
+        btn.classList.add('btn','btn-primary','mx-lg-1')
+        btn.setAttribute('onclick',"setHolder("+ "'" + id + "','" + index +"')")
+        btn.id = "setHolder"
+        btn.setAttribute('data-toggle',"tooltip")
+        btn.setAttribute('title','设为户主')
+        var icon = document.createElement('i')
+        icon.classList.add('fa-solid','fa-star')
+        btn.appendChild(icon)
+
+        var btn2 = document.createElement('button')
+        btn2.classList.add('btn','btn-danger','mx-lg-1')
+        btn2.setAttribute('onclick',"confirmDelete("+ "'" + id + "','" + index +"')")
+        btn2.id = "delete"
+        btn2.setAttribute('data-bs-toggle','modal')
+        btn2.setAttribute('data-bs-target','#myModal')
+        var icon2 = document.createElement('i')
+        icon2.classList.add('fa-solid','fa-trash')
+        btn2.appendChild(icon2)
+
+        optdiv.appendChild(btn)
+        optdiv.appendChild(btn2)
+        return [optdiv.outerHTML].join('')
+    }
+
+    function confirmDelete(id,index){
+        var datacol = $('tr[data-index='+ index +']');
+        //console.log($('.name',datacol).text())
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要删除 "+$('.name',datacol).text()+"("+$('.phone',datacol).text()+")"+" 吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'c-delete'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#c-delete').remove();
+        $('.modal-footer').append(confirm);
+        $('#c-delete').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            //var pk = parseInt(id)
+            $.ajax({
+                url:'/api/residents/'+id+'/',
+                type:'DELETE',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:() => {
+                    $('#table').bootstrapTable('hideRow', {
+                        index:index
+                    })
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text($('.name',datacol).text()+" 已删除")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    //console.log(error)
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text($('.name',datacol).text()+" 删除失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        });
+    }
+
+    function setHolder(id,index){
+        var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+        var p_data = {}
+        p_data['holder'] = parseInt(id)
+        $.ajax({
+            url:'/api/houses/{{pk}}/set_holder/',
+            type:'POST',
+            dataType:'json',
+            data: JSON.stringify(p_data),
+            contentType: 'application/json; charset=UTF-8',
+            headers:{
+                    "X-CSRFToken": CSRFtoken,
+            },
+            success:(data) => {
+                window.location.reload();
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("操作失败："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+
+        })
+    }
+
+    function load_resident_table(){
+        var columns = [
+            {field:'id',title:'编号',class:"id"},
+            {field:'name',title:'姓名',sortable:true,class:"name"},
+            {field:'sex',title:'性别',sortable:true,class:"sex"},
+            {field:'age',title:'年龄',sortable:true,class:"age"},
+            {field:'phone',title:'电话',sortable:true,class:"phone"},
+            {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident"},
+            {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation"},
+            {field:'note',title:'备注',sortable:true,class:"note"},
+            {field:'option',title:'操作',class:"option"},
+        ]
+        var res_data = []
+        $.ajax({
+            url:"/api/houses/{{pk}}/get_residents/",
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                var i = 0;
+                data['residents'].forEach(element => {
+                    res_data[i] = {
+                        'id':element.id,
+                        'name':nameFormatter(element.id,element.name),
+                        'sex':element.sex_display,
+                        'age':element.age,
+                        'phone':element.phone,
+                        'isLocalResident':get_bool(element.isLocalResident),
+                        'outLocation':element.outLocation,
+                        'note':element.note,
+                        'option':optionFormatter(element.id,i)
+                    }
+                    i++;
+                });
+                $('#table').bootstrapTable({
+                    columns :columns,
+                    data: res_data
+                })
+                load_Form()
+                $('[data-toggle="tooltip"]').tooltip()
+            }
+        })
+    }
+
+    function nameFormatter(id,name){
+        return [
+            '<a href="/resident/' + id +'">'+ holder_check(id,name) +'</a>'
+        ].join('')
+    }
+
+    function nameFooter(){
+        return [
+            '<div class="form-name needs-validation">',
+            '    <input id="form-name-input" class="form-control" aria-describedby="namehelp" required>',
+            '    <div id="namehelp" class="form-text">姓名</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>',
+        ].join('')
+    }
+
+    function sexFooter(){
+        return [
+            '<div class="form-sex">',
+            '    <select name="form-sex-input" id="form-sex-input" class="form-select" aria-describedby="sexhelp">',
+            '        <option value="m">男</option>',
+            '        <option value="f">女</option>',
+            '    </select>',
+            '    <div id="sexhelp" class="form-text">性别</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>'
+        ].join('')
+    }
+
+    function IDnumFooter(){
+        return [
+            '<div class="form-idnumber">',
+            '    <input type="text" id="form-idnumber-input" maxlength="18" class="form-control" aria-describedby="idnumberhelp" required>',
+            '    <div id="idnumberhelp" class="form-text">身份证号</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>'
+        ].join('')
+    }
+
+    function phoneFooter(){
+        return [
+            '<div class="form-phone">',
+            '    <input type="number" id="form-phone-input" maxlength="11" class="form-control" aria-describedby="phonehelp">',
+            '    <div id="phonehelp" class="form-text">手机号</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>'
+        ].join('')
+    }
+
+    function isLocalFooter(){
+        return [
+            '<div class="form-isLocalResident form-check">',
+            '    <input type="checkbox" id="form-islocal-input" class="form-check-input" aria-describedby="islocalhelp">',
+            '    <label class="form-check-label" for="form-islocal-input">',
+            '        是否常住',
+            '    </label>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>'
+        ].join('')
+    }
+
+    function outLocationFooter(){
+        return [
+            '<div class="form-outlocation">',
+            '    <input id="form-outlocation-input" class="form-control" aria-describedby="outlocationhelp">',
+            '    <div id="outlocationhelp" class="form-text">在外地点</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>',
+        ].join('')
+    }
+
+    function noteFooter(){
+        //常规的文本输入，可以为空
+        return [
+            '<div class="form-note">',
+            '    <input id="form-note-input" class="form-control" aria-describedby="notehelp">',
+            '    <div id="notehelp" class="form-text">备注</div>',
+            '    <div class="invalid-feedback">',
+            '    </div>',
+            '</div>',
+        ].join('')
+    }
+
+    function optionFooter(){
+        //一个AJAX提交表单创建信息的按钮
+        return [
+            '<div class="form-submit">',
+            '    <button onclick="event.preventDefault()" class="btn btn-primary mx-1" id="form-submit">',
+            '        <i class="fa-solid fa-plus"></i>',
+            '    </button>',
+            '</div>'
+        ].join('')
+    }
+    var name_data,
+        sex_data = 'm',
+        idnumber_data,
+        phone_data = null,
+        islocal_data = false,
+        outlocation_data = '',
+        house_data,
+        note_data = '',
+        global_index = 0
+
+    function resetGlobalparams(){
+        globalThis.name_data = undefined
+        globalThis.sex_data = 'm'
+        globalThis.phone_data = null
+        globalThis.islocal_data = false
+        globalThis.outlocation_data = ''
+        globalThis.house_data = undefined
+        globalThis.note_data = ''
+    }
+
+    function load_Form(){
+        $('tfoot > tr > th.name').html(nameFooter())
+        nameFooterListener()
+
+        $('tfoot > tr > th.sex').html(sexFooter())
+        sexFooterListener()
+
+        $('tfoot > tr > th.age').html(IDnumFooter())
+        IDnumFooterListener()
+
+        $('tfoot > tr > th.phone').html(phoneFooter())
+        phoneListener()
+
+        $('tfoot > tr > th.isLocalResident').html(isLocalFooter())
+        islocalListener()
+
+        $('tfoot > tr > th.outLocation').html(outLocationFooter())
+        outlocationListener()
+
+        $('tfoot > tr > th.note').html(noteFooter())
+        noteFooterListener()
+
+        $('tfoot > tr > th.option').html(optionFooter())
+        optionListener()
+    }
+
+    function noteFooterListener(){
+        $('#form-note-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.note_data = $(this).val()
+            }else{
+                globalThis.note_data = ''
+            }
+        })
+    }
+
+    function islocalListener(){
+        $('#form-islocal-input').on('click',function(){
+            if($(this).is(":checked")){
+                globalThis.islocal_data = true
+            }else{
+                globalThis.islocal_data = false
+            }
+        })
+    }
+
+    function outlocationListener(){
+        $('#form-outlocation-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.outlocation_data = $(this).val()
+            }else{
+                globalThis.outlocation_data = ''
+            }
+        })
+    }
+
+    function nameFooterListener(){
+        $('#form-name-input').blur(function(){
+            //console.log($(this).val())
+            if($(this).val() == ''){
+                $('.form-name .invalid-feedback').text("姓名不能为空")
+                globalThis.name_data = undefined
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+            }else{
+                $(this).removeClass('is-invalid')
+                globalThis.name_data = $(this).val()
+            }
+            
+        })
+        $('#form-name-input').on('input',function(){
+            $(this).removeClass('is-invalid')
+        })
+    }
+
+    function sexFooterListener(){
+        $('#form-sex-input').on('change',function(){
+            globalThis.sex_data = $(this).val()
+        })
+    }
+
+    function IDnumFooterListener(){
+        $('#form-idnumber-input').blur(function(){
+            var num = $(this).val()
+            num = num.toUpperCase()
+            if(!(/(^\d{15}$)|(^\d{17}([0-9]|X)$)/.test(num))){
+                $('.form-idnumber .invalid-feedback').text("身份证号有误/不能为空")
+                globalThis.idnumber_data = undefined
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+            }else{
+                globalThis.idnumber_data = num
+                $(this).removeClass('is-invalid')
+            }
+        })
+    }
+
+    function phoneListener(){
+        $('#form-phone-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.phone_data = $(this).val()
+            }else{
+                globalThis.phone_data = ''
+            }
+        })
+    }
+
+    function optionListener(){
+        $('#form-submit').on('click',function(){
+            if(globalThis.name_data != undefined){
+                if(globalThis.idnumber_data != undefined){
+                    var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+                    var f_data = {};
+                    f_data['name'] = globalThis.name_data
+                    f_data['IDnumber'] = globalThis.idnumber_data
+                    f_data['sex'] = globalThis.sex_data
+                    f_data['phone'] = globalThis.phone_data
+                    f_data['isLocalResident'] = globalThis.islocal_data
+                    f_data['outLocation'] = globalThis.outlocation_data
+                    f_data['note'] = globalThis.note_data
+                    f_data['b_house'] = '{{pk}}'
+                    var i = globalThis.global_index
+                    $.ajax({
+                        url:'/api/residents/',
+                        type:'POST',
+                        dataType:'json',
+                        data: JSON.stringify(f_data),
+                        contentType: 'application/json; charset=UTF-8',
+                        headers:{
+                            "X-CSRFToken": CSRFtoken,
+                        },
+                        success:(element) => {
+                            resetGlobalparams()
+
+                            var row = []
+                            row.push({
+                                'id':element.id,
+                                'name':element.name,
+                                'sex':element.sex_display,
+                                'age':element.age,
+                                'phone':element.phone,
+                                'isLocalResident':get_bool(element.isLocalResident),
+                                'outLocation':element.outLocation,
+                                'note':element.note,
+                                'option':optionFormatter(element.id,i)
+                            })
+                            $('#table').bootstrapTable('append',row)
+                            $('#table').bootstrapTable('scrollTo', 'bottom')
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-success text-success')
+                            $('#toast .toast-body').text(element.name +" 添加成功")
+                            $('#toast').toast('show');
+                        },
+                        error:(error) => {
+                            //console.log(error['responseJSON'])
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-danger text-danger')
+                            $('#toast .toast-body').text("添加失败："+error.responseJSON.message)
+                            $('#toast').toast('show');
+                        }
+                    })
+                }else{
+                    $('#form-idnumber-input').trigger('blur')
+                }
+            }else{
+                $('#form-name-input').trigger('blur')
+            }
+        })
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+<title>村庄详情 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'village-list-html' %}" style="text-decoration: none;">村庄总览 </a>
+        <span> > </span>
+        <span> 村庄详情 <span id="name-display" class="h4"></span></span>
+    </h2>
+</div>
+
+<div class="px-lg-5">
+    <div class="form-group py-2" id="form-name">
+        <label for="form-name-input">
+            <h4>村名</h4>
+        </label>
+        <input type="text" id="form-name-input" class="form-control">
+        <div class="invalid-feedback"></div>
+    </div>
+
+    <div class="form-group py-2" id="form-data">
+        <div class="row">
+            <div class="col">
+                <label for="form-locX-display">
+                    <h4>经度</h4>
+                </label>
+                <input type="number" class="form-control" id="form-locX-display" readonly>
+            </div>
+            <div class="col">
+                <label for="form-locY-display">
+                    <h4>纬度</h4>
+                </label>
+                <input type="number" class="form-control" id="form-locY-display" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group py-2" id="form-data">
+        <div class="row">
+            <div class="col">
+                <label for="mgrid_count">
+                    <h4>微网格</h4>
+                </label>
+                <input type="number" class="form-control" id="mgrid_count" readonly>
+            </div>
+            <div class="col">
+                <label for="user_count">
+                    <h4>用户</h4>
+                </label>
+                <input type="number" class="form-control" id="user_count" readonly>
+            </div>
+            <div class="col">
+                <label for="houses_count">
+                    <h4>住户</h4>
+                </label>
+                <input type="number" class="form-control" id="houses_count" readonly>
+            </div>
+            <div class="col">
+                <label for="pop_count">
+                    <h4>人口</h4>
+                </label>
+                <input type="number" class="form-control" id="pop_count" readonly>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="px-lg-5 py-2 d-grid">
+    <button class="btn btn-success btn-lg" id="submit">更新信息</button>
+</div>
+
+
+<script>
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+        load_Form()
+    })
+    
+    function load_Form(){
+        load_data()
+        resetGlobalParams()
+        nameListener()
+        submitListener()
+    }
+
+    function load_data(){
+        $.ajax({
+            url:"/api/village/{{pk}}/",
+            type:"GET",
+            success:(data) => {
+                //console.log(data)
+                document.title = data.name + " - {{title}}"
+                $('#name-display').text(data.name)
+                $('#form-name-input').val(data.name)
+                $('#form-locX-display').val(data.locationX)
+                $('#form-locY-display').val(data.locationY)
+                $('#mgrid_count').val(data.mgrid_count)
+                $('#user_count').val(data.user_count)
+                $('#houses_count').val(data.houses_count)
+                $('#pop_count').val(data.pop_count)
+            }
+        })
+    }
+
+    var name
+
+    function resetGlobalParams() {
+        globalThis.name = ''
+    }
+
+    function nameListener() {
+        $("#form-name-input").blur(function(){
+            globalThis.name = $(this).val()
+        })
+    }
+    
+    function submitListener(){
+        $('#submit').on('click',function(){
+            var p_data = {};
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            if(globalThis.name != ''){p_data['name'] = globalThis.name}
+            $.ajax({
+                url:'/api/village/'+'{{pk}}'+'/',
+                type:'PUT',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    resetGlobalParams()
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("更新成功")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("更新失败："+error)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+</script>
+
+{% endblock %}

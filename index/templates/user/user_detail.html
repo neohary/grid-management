@@ -1,0 +1,250 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+<title>用户详情 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'user-list-html' %}" style="text-decoration: none;">用户总览 </a>
+        <span> > </span>
+        <span> 用户详情 <span id="name-display" class="h4"></span> <span id="groups-display" class="h4"></span></span>
+    </h2>
+</div>
+
+<div class="px-lg-5">
+    <div class="form-group py-2" id="form-1">
+        <div class="row">
+            <div class="col-lg-6 col-sm-12">
+                <label for="username">
+                    <h4>用户名</h4>
+                </label>
+                <input type="text" id="username" class="form-control" readonly>
+            </div>
+            <div class="col-lg-6 col-sm-12 py-lg-0 py-sm-2">
+                <label for="nickname">
+                    <h4>姓名</h4>
+                </label>
+                <input type="text" id="rname" class="form-control">
+            </div>
+        </div>
+    </div>
+    <div class="form-group py-2" id="form-3">
+        <div class="row">
+            <div class="col-lg-6 col-sm-12 form-phone">
+                <label for="phone">
+                    <h4>手机号</h4>
+                </label>
+                <input type="number" class="form-control" id="phone">
+                <div class="invalid-feedback"></div>
+            </div>
+            <div class="col-lg-6 col-sm-12 py-lg-0 py-sm-2 form-email">
+                <label for="email">
+                    <h4>电子邮箱</h4>
+                </label>
+                <input type="email" class="form-control" id="email">
+                <div class="invalid-feedback"></div>
+            </div>
+        </div>
+    </div>
+    <div class="form-group py-2" id="form-2">
+        <div class="row">
+            <div class="col-lg-6 col-sm-12">
+                <label for="village">
+                    <h4>所属村庄</h4>
+                </label>
+                <select id="village" class="form-select">
+                    <option value="">---</option>
+                </select>
+            </div>
+            <div class="col-lg-6 col-sm-12 py-lg-0 py-sm-2">
+                <label for="mgrid">
+                    <h4>所属微网格</h4>
+                </label>
+                <select id="mgrid" class="form-select">
+                    <option value="">---</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="px-lg-5 pt-5 d-grid gap-2">
+    <button class="btn btn-success btn-lg" id="submit">更新信息</button>
+    <button class="btn btn-primary btn-lg" id="back" onclick="history.back()">返回</button>
+</div>
+
+
+<script>
+    $(document).ready(function(){
+        load_Form()
+    })
+    
+    function load_Form(){
+        load_data()
+        resetGlobalParams()
+        nameListener()
+        phoneListener()
+        emailListener()
+        villageListener()
+        mgridListener()
+        submitListener()
+    }
+
+    function load_data(){
+        $.ajax({
+            url:"/api/user/{{pk}}/",
+            type:"GET",
+            success:(data) => {
+                //console.log(data)
+                $('#name-display').text(data.name)
+                $('#groups-display').html(data.groups_display)
+                $('#username').val(data.username)
+                $('#rname').val(data.name)
+                $('#phone').val(data.phone)
+                $('#email').val(data.email)
+                load_village_data()
+                load_mgrid_data()
+                $('#village').val(data.village[1])
+                $('#mgrid').val(data.mgrid[1])
+            }
+        })
+    }
+
+    function load_village_data() {
+        $.ajax({
+            async:false,
+            url:'/api/village/get_by_permission/',
+            type:'GET',
+            success:(data) => {
+                $('#village').empty()
+                data['villages'].forEach(element => {
+                    var opt = ['<option value="'+element.id+'">'+element.name+'</option>'].join('')
+                    $('#village').append(opt)
+                });
+            }
+        })
+    }
+
+    function load_mgrid_data() {
+        $.ajax({
+            async:false,
+            url:'/api/mgrid/get_by_permission/',
+            type:'GET',
+            success:(data) => {
+                $('#mgrid').empty()
+                var opt = ['<option value="">---</option>'].join('')
+                $('#mgrid').append(opt)
+                data['mgrids'].forEach(element => {
+                    var opt = ['<option value="'+element.id+'">'+element.name+'</option>'].join('')
+                    $('#mgrid').append(opt)
+                });
+            }
+        })
+    }
+
+    var rname,phone,email,village,mgrid
+
+    function resetGlobalParams() {
+        globalThis.rname = ''
+        globalThis.phone = ''
+        globalThis.email = ''
+        globalThis.village = ''
+        globalThis.mgrid = ''
+    }
+
+    function nameListener() {
+        $("#rname").blur(function(){
+            globalThis.rname = $(this).val()
+        })
+    }
+
+    function phoneListener() {
+        $("#phone").blur(function(){
+            if($(this).val().length == 11){
+                globalThis.phone = $(this).val()
+                $(this).removeClass('is-invalid')
+            }else{
+                $('.form-phone .invalid-feedback').text("请输入正确格式的手机号")
+                globalThis.phone = ''
+                $(this).removeClass('is-invalid')
+                .addClass('is-invalid')
+            }
+        })
+    }
+
+    function ValidateEmail(mail) {
+        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(mail)
+    }
+
+    function emailListener() {
+        $("#email").blur(function(){
+            if(ValidateEmail($(this).val())){
+                globalThis.email = $(this).val()
+                $(this).removeClass('is-invalid')
+            }else{
+                $('.form-email .invalid-feedback').text("请输入正确格式的电子邮箱地址")
+                globalThis.email = ''
+                $(this).removeClass('is-invalid')
+                .addClass('is-invalid')
+            }
+        })
+    }
+
+    function villageListener() {
+        $("#village").on('change',function(){
+            globalThis.village = $(this).val()
+        })
+    }
+    function mgridListener() {
+        $("#mgrid").on('change',function(){
+            globalThis.mgrid = $(this).val()
+        })
+    }
+    
+    function submitListener(){
+        $('#submit').on('click',function(){
+            var p_data = {};
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            if(globalThis.rname != ''){p_data['r_name'] = globalThis.rname}
+            if(globalThis.phone != ''){p_data['phone'] = globalThis.phone}
+            if(globalThis.email != ''){p_data['email'] = globalThis.email}
+            if(globalThis.village != ''){p_data['village'] = globalThis.village}
+            if(globalThis.mgrid != ''){p_data['mgrid'] = globalThis.mgrid}
+
+            $.ajax({
+                url:'/api/user/{{pk}}/',
+                type:'PUT',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    resetGlobalParams()
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("更新成功")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("更新失败："+error)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+</script>
+
+{% endblock %}

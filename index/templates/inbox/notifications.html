@@ -1,0 +1,125 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<style>
+    .btn-info {
+        background-color: #edf0f6 !important;
+        color:#212529 !important;
+        text-align: left;
+    }
+    .btn-info:hover {
+        background-color: #fff !important;
+        cursor: default;
+    }
+    .btn-warning {
+        background-color: #fffd9b;
+        text-align: left;
+    }
+    .btn-warning:hover {
+        background-color: #fff;
+        cursor: default;
+    }
+</style>
+<title>消息列表 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="py-3 px-lg-5 d-flex justify-content-between">
+    <h2>消息</h2>
+    <div>
+        <button class="mx-1 btn btn-primary" onclick="markallread()">
+            <i class="fa-regular fa-bell"></i>
+            已读所有消息
+        </button>
+        <button class="mx-1 btn btn-danger" onclick="confirmClearallRead()" data-bs-toggle="modal" data-bs-target="#myModal">
+            <i class="fa-regular fa-bell-slash"></i>
+            清空已读消息
+        </button>
+    </div>
+</div>
+
+<div class="py-3 px-lg-5 row">
+    {% for notice in notices %}
+        {% if notice.unread %}
+        <div class="col-12 shadow-sm p-3 m-2 btn btn-info border border-warning border-2">
+            <div class="display-block">{{notice.verb}}</div>
+            <div class="pt-2 d-flex justify-content-between">
+                <small class="text-muted">{{ notice.timestamp|timesince }} 之前</small>
+                <small class="text-muted text-right">
+                        未读
+                </small>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 shadow-sm p-3 m-2 btn btn-info border border-2">
+            <div class="display-block">{{notice.verb}}</div>
+            <div class="pt-2 d-flex justify-content-between">
+                <small class="text-muted">{{ notice.timestamp|timesince }} 之前</small>
+                <small class="text-muted text-right">
+                        已读
+                </small>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<script>
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+    })
+
+    function markallread(){
+        window.location.href = "{% url 'notify-mark-all-as-read' %}"
+    }
+
+    function confirmClearallRead(){
+        $('.modal-title').text("确认")
+        $('.modal-body').html(
+            "确定要删除所有已读消息吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'c-delete'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#c-delete').remove();
+        $('.modal-footer').append(confirm);
+        $('#c-delete').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            $.ajax({
+                url:'/notify/delete-all-read/',
+                type:'POST',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:() => {
+                    location.reload();
+                },
+                error:(error) => {
+                    console.log(error)
+                }
+            })
+        })
+    }
+</script>
+
+{% endblock %}

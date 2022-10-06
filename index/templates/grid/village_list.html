@@ -1,0 +1,150 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>村庄总览 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+<div class="py-3 px-lg-5">
+    <h2>村庄总览</h2>
+</div>
+
+<div class="px-lg-5">
+    <table id="table"
+        data-locale="zh-CN"
+        data-sortable="true"
+        data-search="true"
+        data-pagination="true"
+        data-page-size="15"
+        data-page-list="[10, 15, 20, 50, 100, All]"
+        >
+    </table>
+</div>
+
+<script>
+    $(document).ready(function(){
+        
+    })
+    $.ajax({
+        url:'/api/village/get_by_permission/',
+        type:'GET',
+        success:(data) => {
+            var columns = [
+                {field:'id',title:'编号',class:"id"},
+                {field:'village_name',title:'村庄',sortable:true,class:"village_name"},
+                {field:'mgrid_count',title:'微网格数',sortable:true,class:"mgrids"},
+                {field:'houses_count',title:'户数',sortable:true,class:"houses"},
+                {field:'pop_count',title:'人口',sortable:true,class:"pop"},
+                {field:'user_count',title:'用户数',sortable:true,class:"users"},
+                {field:'option',title:'操作',class:"option"}
+            ]
+            var village_data = []
+            console.log(data)
+            var i = 0;
+            data['villages'].forEach(element => {
+                village_data[i] = {
+                    'id':element.id,
+                    'village_name':element.name,
+                    'mgrid_count':element.mgrid_count,
+                    'houses_count':element.houses_count,
+                    'pop_count':element.pop_count,
+                    'user_count':element.user_count,
+                    'option':optionFormatter(element.id,i)
+                }
+                i++;
+            });
+            
+            $('#table').bootstrapTable({
+                columns: columns,
+                data: village_data,
+                onPostBody:function(){
+
+                }
+            })
+        }
+    })
+
+    function optionFormatter(id,index) {
+        return [
+            '<div class="text-center">',
+            '    <a href="/village/'+id+'" role="button" class="btn btn-primary mx-lg-1 my-lg-0 my-1" id="info-'+id+'">',
+            '        <i class="fa-solid fa-list"></i> 查看详情',
+            '    </a>',
+            '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete-'+id+'" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-trash"></i> 删除',
+            '    </button>',
+            '</div>'
+        ].join('')
+    }
+
+    function confirmDelete(id,index) {
+        var datacol = $('tr[data-index='+ index +']');
+        $('.modal-title').text("确认")
+        $('.modal-body').html(
+            "确定要删除 "+$('.village_name',datacol).text()+" 吗？"
+            + "<br> 属于该村庄的所有信息也将一并删除，并移除该村庄的所有用户。")
+        var confirm = document.createElement('button')
+        confirm.id = 'c-delete'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#c-delete').remove();
+        $('.modal-footer').append(confirm);
+        $('#c-delete').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            //var pk = parseInt(id)
+            $.ajax({
+                url:'/api/village/'+id+'/',
+                type:'DELETE',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:() => {
+                    $('#table').bootstrapTable('hideRow', {
+                        index: index
+                    })
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text($('.village_name',datacol).text()+" 已删除")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("删除失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+</script>
+{% endblock %}

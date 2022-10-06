@@ -1,0 +1,369 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% load static %}
+<head>
+	<link href="//mapopen.cdn.bcebos.com/github/BMapGLLib/DrawingManager/src/DrawingManager.min.css" rel="stylesheet">
+	<script src="//mapopen.bj.bcebos.com/github/BMapGLLib/DrawingManager/src/DrawingManager.min.js"></script>
+	<script type="text/javascript" src="//mapopen.cdn.bcebos.com/github/BMapGLLib/GeoUtils/src/GeoUtils.min.js"></script>
+	<script type="text/javascript" src="//mapopen.cdn.bcebos.com/github/BMapGLLib/DrawingManager/src/gpc.js"></script>
+	<script src="{% static 'js/map.js' %}"></script>
+</head>
+<title>地图 - {{title}}</title>
+<style>
+	.roundbtn {
+		width: 50px;
+		height: 50px;
+	}
+	.bmap-container button{
+		border-radius: 0.25rem;
+	}
+</style>
+	<!-- 模态框 -->
+	<div class="modal fade" id="myModal">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<!-- 模态框头部 -->
+				<div class="modal-header">
+					<h4 class="modal-title">模态框标题</h4>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<!-- 模态框内容 -->
+					<div class="modal-body">
+						模态框内容..
+					</div>
+					<!-- 模态框底部 -->
+					<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+				</div>
+			</div>
+		</div>
+	</div>
+<div class="d-flex vh-100">
+	<div id="formbox" class="position-fixed col-sm-7 col-md-4 col-xl-3 col-10 p-2 m-1 card shadow" style="z-index: 100;">
+		<form action="POST" id="formbody">
+			{% csrf_token %}
+			<h2 id="title" class="py-2"></h2>
+			<div class="row">
+				<div class="col mb-3">
+					<label class="form-label" for="village">村庄</label>
+					<select class="form-select" id="village" name="village">
+					</select>
+				</div>
+			</div>
+			
+			<div class="row">
+				<div class="col mb-3">
+					<label class="form-label" for="mgrid">微网格</label>
+					<select class="form-select" id="mgrid" name="mgrid">
+					</select>
+				</div>
+				<div class="col mb-3">
+					<label class="form-label" for="house_mgrid_id">
+						户号
+						<small class="text-muted">留空则自动分配</small>
+					</label>
+					<input type="number" id="house_mgrid_id" name="mgridID" class="form-control" placeholder="自动分配">
+				</div>
+			</div>
+			<div id="updatefields" class="row">
+				<div class="col mb-3">
+					<label class="form-label" for="population">人口</label>
+					<div class="input-group">
+						<input type="number" class="form-control" id="population" name="population" readonly>
+						<button onclick="return false;" class="btn btn-primary" id="membersManager">
+							<i class="fa-solid fa-list"></i>
+						</button>
+					</div>
+				</div>
+				<div class="col mb-3">
+					<label class="form-label" for="holder">户主</label>
+					<div class="input-group">
+						<input type="text" class="form-control" id="holder" name="holder" readonly>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col mb-3 d-grid gap-2">
+					<button onclick="return false;" id="editGeo" class="btn btn-success">编辑形状</button>
+					<input type="submit" id="submit" class="btn btn-primary" role="button" value="创建"> 
+					<button onclick="event.preventDefault();" id="delete" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#myModal">删除</button>
+				</div>
+			</div>
+
+		</form>
+	</div>
+	
+	<div id="allmap" class="flex-fill" style="z-index: 0;"></div>
+	<div id="selectbox_Drawing" class="selectbox_Drawing"></div>
+</div>
+
+
+<script type="text/javascript">
+    // GL版命名空间为BMapGL
+    // 按住鼠标右键，修改倾斜角和角度
+	var map = new BMapGL.Map("allmap",{
+		//enableRotate: false,
+		//enableTilt: false,
+		enableMapClick:false,
+		mapType:BMAP_SATELLITE_MAP
+	});    // 创建Map实例
+	map.setMapStyleV2({
+		styleId:'{{map_style_id}}'
+	})
+
+	{% if user.profile.village %}
+	var locX = parseFloat("{{user.profile.village.locationX}}")
+	var locY = parseFloat("{{user.profile.village.locationY}}")
+	map.centerAndZoom(new BMapGL.Point(locX, locY), 16);
+	{% else %}
+	map.centerAndZoom(new BMapGL.Point(116.404, 39.915), 11);  // 初始化地图,设置中心点坐标和地图级别
+	{% endif %}
+	map.enableScrollWheelZoom(true);     //开启鼠标滚轮缩放
+	var opts = {
+		offset: new BMapGL.Size(10,100)
+	}
+	map.addControl(new BMapGL.ZoomControl(opts));
+	map.addControl(new BMapGL.ScaleControl(opts));  // 添加比例尺控件
+	
+	{% if request.user.is_superuser %}
+	map.addControl(new SearchBarCtrl());
+	{% endif %}
+
+	map.addControl(new MapTypeCtrl());
+	/*var overlayUrl = "{% static 'img/overlay1.png' %}"
+	var pStart = new BMapGL.Point(117.74035470003173,33.74508140706702)
+	var pEnd = new BMapGL.Point(117.77437883494332,33.71894764993908)
+	var bounds = new BMapGL.Bounds(pStart,pEnd)
+	var imgOverlay = new BMapGL.GroundOverlay(bounds,{
+		type:'image',
+		url: overlayUrl,
+		opacity: 1
+	});*/
+	/* 校准叠图用的控件
+	var pStartMarker = new BMapGL.Marker(pStart);
+	var pEndMarker = new BMapGL.Marker(pEnd);
+	pStartMarker.enableDragging();
+	pEndMarker.enableDragging();
+	pStartMarker.addEventListener('dragend',function(e){
+		updateGroundOverlay(pStartMarker.getPosition(),pEndMarker.getPosition(),imgOverlay)
+		console.log('new start position: '+pStartMarker.getPosition().lng+","+pStartMarker.getPosition().lat)
+	});
+	pEndMarker.addEventListener('dragend',function(e){
+		updateGroundOverlay(pStartMarker.getPosition(),pEndMarker.getPosition(),imgOverlay)
+		console.log('new end position: '+pEndMarker.getPosition().lng+","+pEndMarker.getPosition().lat)
+	});*/
+
+	/*map.addOverlay(pStartMarker);
+	map.addOverlay(pEndMarker);
+	map.addOverlay(imgOverlay);*/
+
+	/*function updateGroundOverlay(start,end,overlay){
+		map.removeOverlay(overlay)
+		var bounds = new BMapGL.Bounds(start,end)
+		var imgOverlay = new BMapGL.GroundOverlay(bounds,{
+			type:'image',
+			url: overlayUrl,
+			opacity: 0.5
+		});
+		map.addOverlay(imgOverlay);
+	}*/
+</script>
+
+<script>
+	document.getElementById('formbox').style.display = 'none';
+	var drawBtnCtrl = new DrawButtonsCtrl();
+	{% if 'resident.can_c/d_house' in perms %}
+	map.addControl(drawBtnCtrl);
+	// 实例化鼠标绘制工具
+	var drawingManager = new BMapGLLib.DrawingManager(map, {
+		//isOpen: true,
+		enableDrawingTool:true,
+		enableCalculate:true,
+		enableSorption:true,
+		drawingToolOptions: {
+			enableTips:true,
+			hasCustomStyle:true,
+			anchor:BMAP_ANCHOR_BOTTOM_RIGHT,
+			offset:new BMapGL.Size(0,0),
+			scale:1,
+			drawingModes:[]
+		},
+		enableSorption:true,
+		sorptionDistance:20,
+		enableGpc:true,
+		polygonOptions:styleOptions,
+		rectangleOptions:styleOptions,
+		labelOptions:labelOptions
+	});
+	
+	drawingManager.addEventListener('overlaycomplete',function(e,instance){
+		/*console.log(e,instance);
+		console.log("绘制面积",(e.calculate / 1000 / 1000).toFixed(2) + 'k㎡');
+		console.log(e.overlay);*/
+		drawcheck(false);
+		
+		e.overlay.addEventListener('mouseover',function(){
+			overlay_mouseover(this);
+		});
+		e.overlay.addEventListener('mouseout',function(){
+			overlay_mouseout(this);
+		});
+
+		var path = {};
+		var i = 0;
+		e.overlay.getPath().forEach(element => {
+			var point = [];
+			point.push(element.lng,element.lat)
+			path[i] = point;
+			i++;
+		});
+
+		var hash = e.overlay.hashCode;
+		var selfpolygon = e.overlay
+		
+		var label = overlay_addLabel(e.overlay,'新建房屋区域' + hash,-50,-20,labelStyle);
+
+		e.overlay.addEventListener('click',function(){
+			$('#title').text("新建房屋区域"+hash);
+			house_CreateForm();
+			var test = document.createElement('div');
+			overlay_formbox(this,test,"创建");
+			$('#submit').on('click',function(e){
+				e.preventDefault();
+				var P_data = {};
+				var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+				var mgridID = $('#house_mgrid_id').val();
+				P_data['village'] = $('#village').val();
+				P_data['mgrid'] = $('#mgrid').val();
+				//console.log(P_data['village'])
+				if(mgridID){
+					P_data['mgridID'] = mgridID;
+				}else{
+					P_data['mgridID'] = 'auto';
+				};
+				P_data['geo'] = path;
+				//console.log(JSON.stringify(P_data));
+				$.ajax({
+					url:'/api/houses/',
+					type:'POST',
+					dataType:'json',
+					data: JSON.stringify(P_data),
+					contentType: 'application/json; charset=UTF-8',
+					headers:{
+						"X-CSRFToken": CSRFtoken,
+					},
+					success:(data) => {
+						console.log(data);
+						loadNewOverlay(data);
+						abandonOverlay(selfpolygon,label);
+					},
+					error:(error) => {
+						console.log(error);
+					}
+				});
+			});
+			$('#delete').on('click',function(){
+                $('.modal-title').text("确认")
+                $('.modal-body').text("确定要删除 "+hash+" 吗？")
+                var confirm = document.createElement('button')
+                confirm.id = 'c-delete'
+                confirm.classList.add('btn','btn-danger')
+                confirm.innerText = "确定"
+                confirm.setAttribute('data-bs-dismiss','modal')
+                $('#c-delete').remove();
+                $('.modal-footer').append(confirm);
+                $('#c-delete').on('click',function(){
+                    abandonOverlay(e.overlay,label)
+                });
+            });
+		});
+
+	});
+
+	drawingManager.addEventListener('overlaycancel',function(){
+		drawcheck(false);
+	});
+	{% endif %}
+	
+
+	map.addEventListener('click',function(e){
+		if(!e.overlay && !isEditing){
+			document.getElementById('formbox').style.display = 'none';
+			house_ClearFormData();
+		}
+	});
+
+	$(document).ready(function(){
+		$.ajax({
+			url: '/api/houses/get_by_permission/',
+			type: "GET",
+			dataType: "json",
+			success: (data) => {
+				data.houses.forEach(element => {
+					loadNewOverlay(element);
+				});
+				//地图加载完毕
+				changeLabelOpt(map.getZoom())
+				searchBarListener()
+			},
+			error: (error) => {
+				console.log(error);
+			}
+		});
+	});
+
+	
+
+	map.addEventListener("zoomend", function(e){
+		//console.log(map.getZoom()); // 获取缩放级别
+		changeLabelOpt(map.getZoom())
+	});
+
+	function changeLabelOpt(level){
+		const max = 20
+		const min = 18
+		if(level < min){
+			level = min
+		}else if(level > max){
+			level = max
+		}
+		var n_value = (level - min) / (max - min)
+		//console.log("result: " + n_value)
+		$('.BMapLabel').css('opacity',n_value)
+	}
+	
+	$('#village').on('change',function(){
+		var s_village = $('#village').val();
+		$.get('/api/village/'+s_village+'/get_mgrids/',function(data){
+			$('#mgrid').empty();
+			if(data.mgrids.length > 1){
+				$('#mgrid').prop('disabled',false);
+				for (let i = 0; i < data.mgrids.length; i++) {
+					const element = data.mgrids[i];
+					var opt = document.createElement('option');
+					opt.setAttribute('value',element.id);
+					opt.text = element.name;
+					if(i == 0){
+						$('#mgrid').val(opt.value);
+					};
+					$('#mgrid').append(opt);
+				}
+			}else if(data.mgrids.length == 1){
+				var opt = document.createElement('option');
+				opt.setAttribute('value',data.mgrids[0].id);
+				opt.text = data.mgrids[0].name;
+				$('#mgrid').append(opt);
+				$('#mgrid').prop('disabled',true);
+				$('#mgrid').val(opt.value);
+			};
+			if(mgrid_changeselect != ''){
+				$('#mgrid').val(mgrid_changeselect)
+				mgrid_changeselect = ''
+			}
+			$('#mgrid').trigger('change');
+		})
+	});
+</script>
+
+{% endblock %}
+

@@ -1,0 +1,183 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>编辑用户组 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'user-list-html' %}" style="text-decoration: none;">用户总览 </a>
+        <span> > </span>
+        <span> 修改用户组</span>
+    </h2>
+</div>
+
+<!-- 
+    修改用户村庄和微网格的表单
+    ajax载入村庄和微网格select数据
+    ajax载入用户数据时预选择现在的数据
+    用户修改后提交则应用修改
+ -->
+ <div class="px-lg-5 ">
+    <div class="pt-5 d-flex justify-content-center">
+        <div class="h4">修改用户 <span id="name"></span> 的用户组</div>
+    </div>
+    <div class="d-flex justify-content-evenly">
+        <div>所属村庄：<strong id="village"></strong></div>
+        <div>微网格：<strong id="mgrid"></strong></div>
+    </div>
+    <div class="pt-3 d-flex justify-content-center">
+        <div id="container">
+            <div class="form-check py-2">
+                <input type="checkbox" class="form-check-input" value="XXX组" id="XXX1">
+                <label for="XXX1" class="form-check-label">XXX组</label>
+            </div>
+            <div class="form-check py-2">
+                <input type="checkbox" class="form-check-input" value="XXX组" id="XXX2">
+                <label for="XXX2" class="form-check-label">XXX组</label>
+            </div>
+            <div class="form-check py-2">
+                <input type="checkbox" class="form-check-input" value="XXX组" id="XXX3">
+                <label for="XXX3" class="form-check-label">XXX组</label>
+            </div>
+        </div>
+    </div>
+    <div class="pt-5 d-grid gap-2">
+        <button class="btn btn-success" onclick="submit()">提交</button>
+        <a href="{% url 'user-list-html' %}" class="btn btn-primary" role="button">返回</a>
+    </div>
+ </div>
+
+ <script>
+    $(document).ready(function(){
+        load_group_data()
+        load_user_data()
+    })
+
+    function create_option(data) {
+        return [
+            '<option value="'+data.id+'">'+data.name+'</option>'
+        ].join('')
+    }
+
+    function load_group_data(){
+        $('#container').empty()
+        $.ajax({
+            url:'/api/group/get_by_permission/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                //console.log(data)
+                data.forEach(element => {
+                    $('#container').append(create_cell(element))
+                });
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("数据载入异常："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function create_cell(e){
+        return [
+            '<div class="form-check py-2">',
+            '    <input type="checkbox" class="form-check-input" value="'+e.id+'" id="'+e.id+'" aria-describedby="'+e.id+'Help">',
+            '    <label for="'+e.id+'" class="form-check-label">'+e.name+'</label>',
+            '    <div id="'+e.id+'Help" class="form-text">'+e.description+'</div>',
+            '</div>'
+        ].join('')
+    }
+
+    function load_user_data(){
+        $.ajax({
+            url:'/api/user/{{pk}}/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                //console.log(data)
+                $('#name').text(data.username)
+                $('#village').text(data.village[0])
+                $('#mgrid').val(data.mgrid[0])
+                data['groups'].forEach(element => {
+                    $("#"+element[1]).prop('checked', true);
+                });
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("数据载入异常："+error.responseJSON)
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function submit(){
+        var groups = []
+        $('#container input').each(function(){
+            if($(this).is(':checked')){
+                //console.log($(this).val())
+                groups.push($(this).val())
+            }
+        })
+        var p_data = {'groups':groups}
+        var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+        $.ajax({
+            url:'/api/user/{{pk}}/set_group/',
+            type:'POST',
+            dataType:'json',
+            data: JSON.stringify(p_data),
+            contentType: 'application/json; charset=UTF-8',
+            headers:{
+                "X-CSRFToken": CSRFtoken,
+            },
+            success:() => {
+                window.location.replace("/user/list");
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("操作失败："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+        })
+        var p_data2 = {'mgrid':$('#mgrid').val()}
+        //更新用户信息的api
+    }
+ </script>
+
+ {% endblock %}

@@ -1,0 +1,13 @@
+.gray{
+    color : #ced4da;
+    display: block;
+}
+.bg-gray{
+    background-color: #495057;
+}
+
+.btn-dark:hover {
+    background-color: #4c5053 !important; 
+    border-color: #4c5053;
+    color: #f8f9fa !important;
+}

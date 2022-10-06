@@ -1,0 +1,144 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<title>确认提交申请 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>确认提交申请</h2>
+</div>
+
+<div class="px-lg-5 row d-flex justify-content-center m-3">
+    <div class="col-lg-6 col-12 p-3 border border-2 rounded">
+        <div class="py-2 h4">
+            你将要申请加入村庄 <span class="name">村庄名</span> 请确认以下信息
+        </div>
+        <div class="py-2">
+            <label for="mgrid" class="form-label">选择你所属的微网格（如果是村级管理，可以忽略）</label>
+            <select id="mgrid" class="form-select">
+                <option value="">---</option>
+            </select>
+        </div>
+        <div class="py-2">
+            <label for="note" class="form-label">申请留言（选填）</label>
+            <textarea class="form-control" id="note" rows="3" maxlength="150"></textarea>
+        </div>
+        <div class="py-2 d-grid gap-2">
+            <button class="btn btn-primary" onclick="submitApply({{pk}})">确认并提交</button>
+            <button class="btn btn-secondary" onclick="backToSelect()">返回选择页面</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        load_village({{pk}});
+    })
+
+    function load_village(id){
+        $.ajax({
+            url:'/api/village/'+id+'/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                $('.name').text(data.name)
+                $.ajax({
+                    url:'/api/village/'+id+'/get_mgrids/',
+                    type:'GET',
+                    dataType:'json',
+                    success:(data) => {
+                        $('#mgrid').empty()
+                        var option = document.createElement('option')
+                        option.setAttribute('value','')
+                        option.innerText = '---'
+                        $('#mgrid').append(option)
+                        data['mgrids'].forEach(element => {
+                            $('#mgrid').append(create_option(element))
+                        });
+                    },
+                    error:(error) => {
+                        $('#toast').removeClass('border-success text-success border-danger text-danger')
+                            .addClass('border-danger text-danger')
+                        $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'].message)
+                        $('#toast').toast('show');
+                    }
+                })
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'].message)
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function create_option(data){
+        return [
+            '<option value="'+data.id+'">'+ data.village_name +' - '+ data.name +'</option>'
+        ].join('')
+    }
+
+    function backToSelect(){
+        window.location.replace("/select-village/");
+    }
+
+    function submitApply(id){
+        var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+        var p_data = {}
+        p_data['village'] = id
+        if($('#mgrid').val() != ''){
+            p_data['mgrid'] = parseInt($('#mgrid').val())
+        }
+        p_data['note'] = $('#note').val()
+        $.ajax({
+            url:'/api/user-approval/',
+            type:'POST',
+            dataType:'json',
+            data: JSON.stringify(p_data),
+            contentType: 'application/json; charset=UTF-8',
+            headers:{
+                "X-CSRFToken": CSRFtoken,
+            },
+            success:() => {
+                window.location.replace("/select-village/complete/");
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误："+error['responseJSON'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+</script>
+
+{% endblock %}

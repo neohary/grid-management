@@ -1,0 +1,25 @@
+.id {
+    display: none;
+    visibility: hidden;
+}
+#form-name-input {
+    width: 100px;
+}
+#form-sex-input {
+    width: 80px;
+}
+#form-idnumber-input {
+    width: 200px;
+}
+#form-phone-input {
+    width: 150px;
+}
+#form-outlocation-input {
+    width: 120px;
+}
+#form-note-input {
+    width: 120px;
+}
+#form-house-input {
+    width: 150px;
+}

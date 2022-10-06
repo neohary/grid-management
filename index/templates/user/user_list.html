@@ -1,0 +1,171 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>用户总览 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>用户总览</h2>
+</div>
+
+<div class="px-lg-5">
+    <table id="table"
+        data-locale="zh-CN"
+        data-sortable="true"
+        data-search="true"
+        data-pagination="true"
+        data-page-size="15"
+        data-page-list="[10, 15, 20, 50, 100, All]"
+        >
+    </table>    
+</div>
+
+<script>
+    
+
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+    })
+
+    $.ajax({
+        url:'/api/user/get_by_permission/',
+        type:'GET',
+        success:(data) => {
+            var columns = [
+                {field:'id',title:'编号',class:"id"},
+                {field:'username',title:'用户名',sortable:true,class:"username"},
+                {field:'phone',title:'手机号',sortable:true,class:"phone"},
+                {field:'email',title:'邮箱',sortable:true,class:"email"},
+                {field:'village',title:'村庄',sortable:true,class:"village"},
+                {field:'mgrid',title:'微网格',sortable:true,class:"mgrid"},
+                {field:'group',title:'权限',sortable:true,class:"group"},
+                {field:'last_login',title:'最后登录',sortable:true,class:"last_login"},
+                {field:'option',title:'操作',class:"option"}
+            ];
+            var res_data = []
+            var i = 0;
+            data['users'].forEach(element => {
+                console.log(element)
+                res_data[i] = {
+                    'id':element.id,
+                    'username':element.name,
+                    'phone':element.phone,
+                    'email':element.email,
+                    'village':element.village[0],
+                    'mgrid':element.mgrid[0],
+                    'group':element.groups_display.join(''),
+                    'last_login':element.last_login_display,
+                    'option':optionFormatter(element.id,i)
+                }
+                i++;
+                globalThis.global_index = i;
+            });
+            console.log(res_data)
+            $('#table').bootstrapTable({
+                columns: columns,
+                data:res_data,
+                onPostBody:function(){
+                    
+                }
+            })
+        }
+    });
+
+    function optionFormatter(id,index){
+        return [
+            '<div>',
+            '    <button class="btn btn-primary my-lg-0 my-1" onclick="editUserGroup('+id+')">',
+            '        <i class="fa-solid fa-pen-to-square"></i> 编辑权限',
+            '    </button>',
+            '    <button class="btn btn-primary my-lg-0 my-1" onclick="userDetail('+id+')">',
+            '        <i class="fa-solid fa-list"></i> 修改信息',
+            '    </button>',
+            '    <button class="btn btn-danger my-lg-0 my-1" onclick="confirmKickUser('+id+','+index+')" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-xmark"></i> 移除用户',
+            '    </button>',
+            '</div>'
+        ].join('')
+    }
+
+    function confirmKickUser(id,index) {
+        var datacol = $('tr[data-index='+ index +']');
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要移除 "+$('.username',datacol).text()+" 吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'confirm'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#confirm').remove();
+        $('.modal-footer').append(confirm);
+        $('#confirm').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            var p_data = {}
+            $.ajax({
+                url:'/api/user/'+id+'/kick/',
+                type:'DELETE',
+                dataType:'json',
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    $('#table').bootstrapTable('hideRow',{index:index})
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("用户已移除")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    //console.log(error['responseJSON'])
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("操作失败："+error['responseJSON'])
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+    function editUserGroup(id){
+        window.location.href = "/user/"+id+"/edit-user-group";
+    }
+
+    function userDetail(id){
+        window.location.href = '/user/'+id;
+    }
+</script>
+
+{% endblock %}

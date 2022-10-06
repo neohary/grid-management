@@ -1,0 +1,225 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>用户申请 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>用户申请</h2>
+</div>
+
+<div class="px-lg-5">
+    <table id="table"
+        data-locale="zh-CN"
+        data-sortable="true"
+        data-search="true"
+        data-pagination="true"
+        data-page-size="15"
+        data-page-list="[10, 15, 20, 50, 100, All]"
+        >
+        <div class="text-center" id="emptydiv">
+            <div class="h1">申请队列为空</div>
+        </div>
+    </table>    
+</div>
+
+<script>
+    var columns = [
+        {field:'id',title:'编号',class:"id"},
+        {field:'user',title:'申请人',sortable:true,class:"user"},
+        {field:'village',title:'村庄',sortable:true,class:"village"},
+        {field:'mgrid',title:'微网格',sortable:true,class:"mgrid"},
+        {field:'note',title:'附加信息',sortable:true,class:"note"},
+        {field:'create_time',title:'申请时间',sortable:true,class:"create_time"},
+        {field:'status',title:'状态',sortable:true,class:"status"},
+        {field:'option',title:'操作',class:"option"}
+    ];
+
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+        load_data()
+    })
+
+    function load_data(){
+        $.ajax({
+            url:'/api/user-approval/get_live_by_village/',
+            type:'GET',
+            success:(data) => {
+                var res_data = []
+                var i = 0;
+                data.forEach(element => {
+                    //console.log(element)
+                    res_data[i] = {
+                        'id':element.id,
+                        'user':element.user_name,
+                        'village':element.village_display,
+                        'mgrid':element.mgrid_display,
+                        'note':element.note,
+                        'create_time':element.create_time_display,
+                        'status':statusFormatter(element.status_display),
+                        'option':optionFormatter(element.id,i)
+                    }
+                    i++;
+                    globalThis.global_index = i;
+                });
+                //console.log(res_data)
+                if(i > 0){
+                    $('#emptydiv').remove()
+                }
+                $('#table').bootstrapTable({
+                    columns: columns,
+                    data:res_data,
+                    onPostBody:function(){
+                        
+                    }
+                })
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+        });
+    }
+
+    function optionFormatter(id,index){
+        return [
+            '<div class="d-flex justify-content-start">',
+            '    <button class="btn btn-success px-3 mx-1" onclick="confirmApprove('+id+','+index+')" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-check"></i>',
+            '    </button>',
+            '    <button class="btn btn-danger px-3 mx-1" onclick="confirmDeny('+id+','+index+')" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-xmark"></i>',
+            '    </button>',
+            '</div>'
+        ].join('')
+    }
+
+    function statusFormatter(status){
+        return [
+            '<div>',
+            '    <div class="badge bg-warning text-dark h3">'+status+'</div>',
+            '</div>'
+        ].join('')
+    }
+
+    function confirmApprove(id,index) {
+        var datacol = $('tr[data-index='+ index +']');
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要批准 "+$('.user',datacol).text()+" 的申请吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'confirm'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#confirm').remove();
+        $('.modal-footer').append(confirm);
+        $('#confirm').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            var p_data = {}
+            p_data['result'] = 'a'
+            $.ajax({
+                url:'/api/user-approval/'+id+'/approve/',
+                type:'POST',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    $('#table').bootstrapTable('hideRow',{index:index})
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("已同意申请")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    //console.log(error['responseJSON'])
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("操作失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+    function confirmDeny(id,index) {
+        var datacol = $('tr[data-index='+ index +']');
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要拒绝 "+$('.user',datacol).text()+" 的申请吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'confirm'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#confirm').remove();
+        $('.modal-footer').append(confirm);
+        $('#confirm').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            var p_data = {}
+            p_data['result'] = 'd'
+            $.ajax({
+                url:'/api/user-approval/'+id+'/approve/',
+                type:'POST',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    $('#table').bootstrapTable('hideRow',{index:index})
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("已拒绝申请")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    //console.log(error['responseJSON'])
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("操作失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,393 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>微网格总览 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+<div class="py-3 px-lg-5">
+    <h2>微网格总览</h2>
+</div>
+
+<div class="px-lg-5">
+    <table id="table"
+        data-locale="zh-CN"
+        data-toggle="table"
+        data-sortable="true"
+        data-search="true"
+        data-pagination="true"
+        data-page-size="15"
+        data-page-list="[10, 15, 20, 50, 100, All]"
+        data-detail-view="true"
+        data-detail-view-by-click="true"
+        data-detail-view-icon="false"
+        data-detail-formatter="mgridDetailFormatter"
+        data-show-footer="true"
+        >
+    </table>
+</div>
+
+<script>
+    var columns = [
+        {field:'id',title:'编号',class:"id"},
+        {field:'icon',title:' ',class:"icon",formatter:iconFormatter()},
+        {field:'village_name',title:'村庄',sortable:true,class:"village_name"},
+        {field:'name',title:'微网格名称',sortable:true,class:"name"},
+        {field:'houses_count',title:'户数',sortable:true,class:"houses"},
+        {field:'pop_count',title:'人口',sortable:true,class:"pop"},
+        {field:'color',title:'颜色',sortable:true,class:"color"},
+        {field:'option',title:'操作',class:"option"}
+    ]
+    var mgrid_data = []
+
+    $(document).ready(function(){
+        load_Form()
+        $('#toast').toast('hide');
+    })
+
+    function iconFormatter(){
+        return [
+            '<i class="fa-solid fa-caret-down"></i>'
+        ].join('')
+    }
+
+    function linkFormatter(name,id){
+        return [
+            '<a href="/house/'+ id +'">'+ name +'</a>'
+        ].join('')
+    }
+    var global_index
+
+    $.ajax({
+        async:false,
+        url:'/api/mgrid/get_by_permission/',
+        type:'GET',
+        success:(data) => {
+            var i = 0;
+            data['mgrids'].forEach(element => {
+                mgrid_data[i] = {
+                    'id':element.id,
+                    'village_name':element.village_name,
+                    'name':element.name,
+                    'houses_count':element.houses_count,
+                    'pop_count':element.pop_count,
+                    'color':colorFormatter(element.color),
+                    'option':operaFormatter(element.id,i)
+                }
+                i++;
+            });
+            globalThis.global_index = i
+        }
+    })
+
+    function colorFormatter(color){
+        return [
+            '<div>',
+            '    <input type="color" class="form-control form-control-color" value="'+ color +'" disabled>',
+            '</div>',
+        ].join('')
+    }
+
+    function mgridDetailFormatter(index,row,element){
+        detail = document.createElement('table')
+        detail.id = "d_table"
+        element.append(detail)
+        var columns = [
+            {field:'id',title:'编号',class:"id"},
+            {field:'name',title:'名称',sortable:true,class:"name"},
+            {field:'mgridID',title:'户号',sortable:true,class:"mgridID"},
+            {field:'population',title:'人口',sortable:true,class:"population"},
+            {field:'holder_name',title:'户主',sortable:true,class:"holder_name"}
+        ]
+        var houses_data = []
+        $.ajax({
+            url:'/api/mgrid/'+row.id+'/get_houses/',
+            type:'GET',
+            success:(data) => {
+                var i = 0;
+                data['houses'].forEach(element => {
+                    houses_data[i] = {
+                        'id':element.id,
+                        'name':linkFormatter(element.house_name,element.id),
+                        'mgridID':element.mgridID,
+                        'population':element.pop_count,
+                        'holder_name':element.holder_name
+                    }
+                    i++;
+                });
+                var table = $('#d_table').bootstrapTable({
+                    columns :columns,
+                    data: houses_data
+                })
+                return table.outerHTML
+            }
+        })
+    }
+
+    function operaFormatter(id,index){
+        return [
+            '<div>',
+            '    <a href="/grid/'+id+'" class="btn btn-primary mx-lg-1 my-lg-0 my-1" role="button">',
+            '        <i class="fa-solid fa-list"></i> 查看详情',
+            '    </a>',
+            '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-trash"></i> 删除',
+            '    </button>',
+            '</div>'
+        ].join('')
+    }
+
+    $('#table').bootstrapTable({
+        columns: columns,
+        data: mgrid_data,
+        onPostBody:function(){
+            load_Form()
+        }
+    })
+
+    function confirmDelete(id,index){
+        var datacol = $('tr[data-index='+ index +']');
+        $('.modal-title').text("确认")
+        $('.modal-body').html(
+            "确定要删除 "+$('.village_name',datacol).text()+" "+$('.name',datacol).text() + " （" + $('.houses',datacol).text()+ "户 " + $('.pop',datacol).text() + "人） 吗？"
+            + "<br> 属于该微网格的住户和居民信息也会一并删除，相关的用户也将被重新分配。")
+        var confirm = document.createElement('button')
+        confirm.id = 'c-delete'
+        confirm.classList.add('btn','btn-danger')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#c-delete').remove();
+        $('.modal-footer').append(confirm);
+        $('#c-delete').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            //var pk = parseInt(id)
+            $.ajax({
+                url:'/api/mgrid/'+id+'/',
+                type:'DELETE',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:() => {
+                    $('#table').bootstrapTable('hideRow', {
+                        index: index
+                    })
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text($('.village_name',datacol).text()+" "+$('.name',datacol).text() + " （" + $('.houses',datacol).text()+ "户 " + $('.pop',datacol).text() + "人） 已删除")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text($('.village_name',datacol).text()+" "+$('.name',datacol).text() + " （" + $('.houses',datacol).text()+ "户 " + $('.pop',datacol).text() + "人） 删除失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+    function load_Form(){
+        resetGlobalParams()
+        $('tfoot > tr > th.village_name').html(villageFooter())
+        villageListener()
+
+        $('tfoot > tr > th.name').html(nameFooter())
+        nameListener()
+
+        $('tfoot > tr > th.color').html(colorFooter())
+        colorListener()
+
+        $('tfoot > tr > th.option').html(optionFooter())
+        optionListener()
+    }
+
+    function villageFooter(){
+        return [
+            '<div class="form-village">',
+            '    <select class="form-select" id="form-village-input" aria-describedby="villagehelp"></select>',
+            '    <div id="notehelp" class="form-text">村庄</div>',
+            '    <div class="invalid-feedback"></div>',
+            '</div>',
+        ].join('')
+    }
+
+    function nameFooter(){
+        return [
+            '<div class="form-name">',
+            '    <input class="form-control" id="form-name-input" aria-describedby="namehelp">',
+            '    <div id="namehelp" class="form-text">微网格名称</div>',
+            '    <div class="invalid-feedback"></div>',
+            '</div>',
+        ].join('')
+    }
+
+    function colorFooter(){
+        return [
+            '<div class="form-color">',
+            '    <input type="color" class="form-control form-control-color" id="form-color-input" value="#000000" aria-describedby="colorhelp">',
+            '    <div id="namehelp" class="form-text">网格颜色</div>',
+            '    <div class="invalid-feedback"></div>',
+            '</div>',
+        ].join('')
+    }
+
+    function optionFooter(){
+        return [
+            '<div>',
+            '    <button id="submit" class="btn btn-primary mx-lg-1 my-lg-0 my-1">',
+            '        <i class="fa-solid fa-plus"></i> 添加',
+            '    </button>',
+            '</div>',
+        ].join('')
+    }
+    var village_data,
+        name_data,
+        color_data
+
+    function villageListener(){
+        $.ajax({
+            url:'/api/village/get_by_permission',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                $('#form-village-input').empty()
+                var option = document.createElement("option")
+                option.setAttribute('value','')
+                option.innerText = '---'
+                $('#form-village-input').append(option)
+                data.villages.forEach(element => {
+                    var option = document.createElement("option")
+                    option.setAttribute('value',element.id)
+                    option.innerText = element.name
+                    $('#form-village-input').append(option)
+                });
+            },
+            error:(error) => {
+                console.log(error)
+            }
+        })
+        $('#form-village-input').on('change',function(){
+            if($(this).val() == ''){
+                $('.form-village .invalid-feedback').text("请选择村庄")
+                $('#form-village-input').removeClass('is-invalid')
+                        .addClass('is-invalid')
+                globalThis.village_data = ''
+            }else{
+                $('#form-village-input').removeClass('is-invalid')
+                globalThis.village_data = $(this).val()
+            }
+        })
+    }
+
+    function nameListener(){
+        $('#form-name-input').blur(function(){
+            if($(this).val() == ''){
+                $('.form-name .invalid-feedback').text("网格名不能为空")
+                $('#form-name-input').removeClass('is-invalid')
+                        .addClass('is-invalid')
+                globalThis.name_data = ''
+            }else{
+                $('#form-name-input').removeClass('is-invalid')
+                globalThis.name_data = $(this).val()
+            }
+        })
+    }
+    
+    function colorListener(){
+        $('#form-color-input').on('change',function(){
+            //console.log($(this).val())
+            globalThis.color_data = $(this).val()
+        })
+    }
+
+    function resetGlobalParams(){
+        globalThis.village_data = ''
+        globalThis.name_data = ''
+        globalThis.color_data = ''
+    }
+
+    function optionListener(){
+        $('#submit').on('click',function(){
+            if(globalThis.village_name != ''){
+                if(globalThis.name_data != ''){
+                    var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+                    var p_data = {}
+                    p_data['village'] = globalThis.village_data
+                    p_data['name'] = globalThis.name_data
+                    p_data['color'] = globalThis.color_data
+                    var i = globalThis.global_index
+                    $.ajax({
+                        url:"/api/mgrid/",
+                        type:"POST",
+                        dataType:"json",
+                        data: JSON.stringify(p_data),
+                        contentType: 'application/json; charset=UTF-8',
+                        headers:{
+                            "X-CSRFToken": CSRFtoken,
+                        },
+                        success:(element) => {
+                            resetGlobalParams()
+                            var row = []
+                            row.push({
+                                'id':element.id,
+                                'village_name':element.village_name,
+                                'name':element.name,
+                                'houses_count':element.houses_count,
+                                'pop_count':element.pop_count,
+                                'color':element.color,
+                                'option':operaFormatter(element.id,i)
+                            })
+                            $('#table').bootstrapTable('append',row)
+                            $('#table').bootstrapTable('scrollTo', 'bottom')
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-success text-success')
+                            $('#toast .toast-body').text(element.name +" 添加成功")
+                            $('#toast').toast('show');
+                        },
+                        error:(error) => {
+                            //console.log(error['responseJSON'])
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                .addClass('border-danger text-danger')
+                            $('#toast .toast-body').text("添加失败："+error['responseJSON'].message)
+                            $('#toast').toast('show');
+                        }
+                    })
+                }else{
+                    $('#form-name-input').trigger('blur')
+                }
+            }else{
+                $('#form-village-input').trigger('change')
+            }
+        })
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+        <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+        <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+        <script src="{% static 'js/jquery.min.js' %}"></script>
+        <link rel="stylesheet" href="{% static 'css/bootstrap-table.min.css' %}">
+        <script src="{% static 'js/bootstrap-table.min.js' %}"></script>
+        <script src="{% static 'js/bootstrap-table-locale-all.min.js' %}"></script>
+        <script type="text/javascript" src="//api.map.baidu.com/api?v=1.0&&type=webgl&ak={{map_key}}"></script>
+        <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    </head>
+    <body>
+        {% if not is_underMaintaining %}
+        <div class="container-fluid bg-light">
+            {% block sidebar %}
+            {% csrf_token %}
+            <div class="row flex-nowrap">
+                <div class="col-auto col-md-3 col-lg-2 col-xl-2 px-sm-2 px-0 bg-dark">
+                    <div class="sticky-top d-flex flex-column d-grid gap-1 mx-auto px-1 pt-2 text-white min-vh-100">
+                        <a href="/" class="d-flex align-items-center px-2 pt-2 pb-3 mb-md-0 me-md-auto text-light text-decoration-none">
+                            <span class="h2 d-none d-sm-inline">{{title}}</span>
+                        </a>
+                        {% load get_context_processor %}
+                        {% load notifications_tags %}
+                        {% for tab in NavbarTabs %}
+                            {% if tab.splitline %}
+                            <hr>
+                            {% endif %}
+                        <a href="{% url tab.url %}" class="btn btn-dark d-flex justify-content-start" role="button">
+                            <i class="{{tab.icon}} pt-1" style="width: 16px;"></i> 
+                            <span class="ps-2 ms-1 d-none d-sm-inline">{{tab.name}}</span>
+                            {% if tab.context_processors %}
+                                {% get_context_processor tab.context_processors as count %}
+                                {% if count > 0 %}
+                                    <span id="{{tab.context_processors}}" class="badge bg-danger rounded-pill d-flex align-items-center align-self-center mt-lg-1 mx-2 d-none d-sm-inline">
+                                        <small>{{count}}</small>
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </a>
+                        {% empty %}
+                        <hr>
+                        <p class="px-3 d-none d-sm-inline text-muted">当前权限没有可用的导航标签</p>
+                        <hr>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endblock %}
+                <div class="col flex-nowrap">
+                    <div class="row">
+                        <div class="col-12 d-flex flex-row-reverse bg-light border-bottom">
+                            {% if user.is_authenticated %}
+                            <div class="dropdown p-3 d-flex">
+                                <div>
+                                    <a href="{% url 'notify-list-html' %}" role="button" class="btn btn-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="消息">
+                                        <i class="fa-solid fa-bell"></i>
+                                        {% notifications_unread as unread_count %}
+                                            {% if unread_count == 0 %}
+                                                <div></div>
+                                            {% elif unread_count < 99 %}
+                                                <div class="badge bg-danger rounded-pill align-self-center">
+                                                    {{ unread_count }}
+                                                </div>
+                                            {% else %}
+                                                <div class="badge bg-danger rounded-pill align-self-center">
+                                                    99+
+                                                </div>
+                                            {% endif %}
+                                    </a>
+                                </div>
+                                <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <small class="d-none d-sm-inline mx-2">已登录</small>
+                                    <i class="fa-solid fa-circle-user fa-lg"></i>
+                                    <span class="d-none d-sm-inline mx-1">{{user.profile.name}}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                                    <li><a class="dropdown-item" href="{% url 'user-detail-html' user.pk %}">个人信息</a></li>
+                                    <li><button class="dropdown-item" disabled>设置</a></li>
+                                    <li>
+                                        <hr class="dropdown-divider">
+                                    </li>
+                                    <li><a class="dropdown-item" id="LogoutButton">登出</a></li>
+                                </ul>
+                            </div>
+                            {% else %}
+                            <div class="p-3">
+                                <a href="{% url 'user-login-html' %}" role="button" class="d-flex btn btn-danger">未登录，点此登录</a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if map_key == False %}
+                            <div class="col-12 p-2 text-center text-light bg-danger">
+                                未配置地图API，地图模块可能无法正常使用
+                            </div>
+                        {% endif %}
+                        {% if headInfo %}
+                            <div class="col-12 p-2 text-center bg-warning">
+                                {{headInfo|safe}}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col bg-light min-vh-100">
+                        {% block content %}{% endblock %}
+                        {% block pagination %}
+                        <nav aria-label="Page navigation example">
+                            {% if is_paginated %}
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+                                    {% else %}
+                                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                                    {% endif %}
+                                    {% for i in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == i %}
+                                        <li class="page-item active"><span class="page-link">{{ i }} <span class="page-link sr-only">(current)</span></span></li>
+                                    {% elif i <= page_obj.number|add:5 and i >= page_obj.number|add:-5 %}
+                                        <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                                    {% else %}
+                                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                                    {% endif %}
+                                </ul>
+                            {% endif %}
+                        </nav>
+                        {% endblock %} 
+                    </div>
+                    <div class="d-flex justify-content-center row bg-light">
+                        <div class="align-self-end bg-light text-muted border-top" style="padding: 3rem 0;">
+                            <div class="p-3 text-center align-bottom">
+                                {{footInfo|safe}}
+                                <!-- 
+                                <p>GRID PROJECT ALPHA</p>
+                                <div class="text-secondary p-3" style="font-size:small;">BY QUANQUAN</div>
+                                 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        {% include "maintaining.html" %}
+        {% endif %}
+    </body>
+    <script>
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+        $(document).ready(function(){
+            logoutListener()
+        })
+        function logoutListener(){
+            $('#LogoutButton').on('click',function(){
+                var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+                $.ajax({
+                    url:'/api/logout/',
+                    type:'POST',
+                    headers:{
+                        "X-CSRFToken": CSRFtoken,
+                    },
+                    success:() => {
+                        window.location.replace("{% url 'user-logout-html' %}");
+                    },
+                    error:(error) => {
+                        console.log(error)
+                    }
+                })
+            })
+        }
+    </script>
+</html>

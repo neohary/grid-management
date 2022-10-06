@@ -1,0 +1,181 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+<title>微网格详情 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'grid-list-html' %}" style="text-decoration: none;">微网格总览 </a>
+        <span> > </span>
+        <span> 微网格详情 <span id="mgrid-name-display" class="h4"></span></span>
+    </h2>
+</div>
+
+<div class="px-lg-5">
+    <div class="form-group py-2" id="form-village">
+        <label for="form-village-input">
+            <h4>村庄</h4>
+        </label>
+        <select id="form-village-input" class="form-select"></select>
+    </div>
+
+    <div class="form-group py-2" id="form-name">
+        <label for="form-name-input">
+            <h4>名称</h4>
+        </label>
+        <input type="text" id="form-name-input" class="form-control">
+        <div class="invalid-feedback"></div>
+    </div>
+
+    <div class="form-group py-2" id="form-color">
+        <label for="form-color-input">
+            <h4>网格颜色</h4>
+        </label>
+        <input type="color" class="form-control form-control-color" id="form-color-input" value="FFFFFF">
+        <div class="invalid-feedback"></div>
+    </div>
+
+    <div class="form-group py-2" id="form-data">
+        <div class="row">
+            <div class="col">
+                <label for="form-house-display">
+                    <h4>户数</h4>
+                </label>
+                <input type="number" class="form-control" id="form-house-display" readonly>
+            </div>
+            <div class="col">
+                <label for="form-pop-display">
+                    <h4>人口</h4>
+                </label>
+                <input type="number" class="form-control" id="form-pop-display" readonly>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="px-lg-5 py-2 d-grid">
+    <button class="btn btn-success btn-lg" id="submit">更新信息</button>
+</div>
+
+
+<script>
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+        load_Form()
+    })
+    
+    function load_Form(){
+        load_village_select()
+        load_mgrid_data()
+        villageListener()
+        nameListener()
+        colorListener()
+        submitListener()
+    }
+
+    function load_village_select(){
+        $.ajax({
+            url:"/api/village/get_by_permission/",
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                $('#form-village-input').empty()
+                data.villages.forEach(element => {
+                    var option = document.createElement("option")
+                    option.setAttribute('value',element.id)
+                    option.innerText = element.name
+                    $('#form-village-input').append(option)
+                });
+            },
+            error:(error) => {
+                console.log(error)
+            }
+        })
+    }
+
+    function load_mgrid_data(){
+        $.ajax({
+            url:"/api/mgrid/{{pk}}/",
+            type:"GET",
+            success:(data) => {
+                //console.log(data)
+                document.title = data.name + " - {{title}}"
+                $('#mgrid-name-display').text(data.village_name + " " + data.name)
+                $('#form-village-input').val(data.village)
+                $('#form-name-input').val(data.name)
+                $('#form-color-input').val(data.color)
+                $('#form-house-display').val(data.houses_count)
+                $('#form-pop-display').val(data.pop_count)
+            }
+        })
+    }
+
+    var village_data,
+        name_data,
+        color_data
+
+    function resetGlobalParams() {
+        globalThis.village_data = ''
+        globalThis.name_data = ''
+        globalThis.color_data = ''
+    }
+
+    function villageListener() {
+        $("#form-village-input").on('change',function(){
+            globalThis.village_data = $(this).val()
+        })
+    }
+    function nameListener() {
+        $('#form-name-input').blur(function(){
+            globalThis.name_data = $(this).val()
+        })
+    }
+    function colorListener() {
+        $('#form-color-input').on('change',function(){
+            globalThis.color_data = $(this).val()
+        })
+    }
+    function submitListener(){
+        $('#submit').on('click',function(){
+            var p_data = {};
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            if(globalThis.village_data != ''){p_data['village'] = globalThis.village_data}
+            if(globalThis.name_data != ''){p_data['name'] = globalThis.name_data}
+            if(globalThis.color_data != ''){p_data['color'] = globalThis.color_data}
+            $.ajax({
+                url:'/api/mgrid/'+'{{pk}}'+'/',
+                type:'PUT',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    resetGlobalParams()
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("更新成功")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("更新失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+</script>
+
+{% endblock %}

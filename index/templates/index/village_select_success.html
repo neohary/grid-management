@@ -1,0 +1,37 @@
+<!-- 
+    完善成功页面
+    增加审批列表视图和功能
+    增加用户组管理功能
+    增加消息通知功能
+ -->
+{% extends "base.html" %}
+{% block content %}
+<title>提交成功 - {{title}}</title>
+<div class="row min-vh-100 bg-dark">
+    <div class="col-lg-4 col-2"></div>
+    <div class="col-lg-4 col-8 d-flex align-items-center justify-content-center text-center">
+        <div class="row p-3 border rounded bg-light">
+            <div class="col-12 ">
+                <h3>网格化管理系统</h3>
+                <span class="align-self-center h4">你的申请已提交，请等待管理员审批以继续</span>
+            </div>
+            <div class="col-12 pt-3 d-grid">
+                <button id="backButton" class="btn btn-success">返回首页</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 col-2"></div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        loginListener()
+    })
+    function loginListener(){
+        $('#backButton').on('click',function(){
+            window.location.replace("{% url 'index' %}");
+        })
+    }
+</script>
+
+{% endblock %}

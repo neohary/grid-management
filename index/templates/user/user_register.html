@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<style>
+    #bg {
+        background-image: url({% static 'img/46482.jpg' %});
+        background-size:cover;
+    }
+    .text-gray {
+        color: #3d3d3d;
+    }
+</style>
+<title>注册账号 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="row min-vh-100">
+    <div class="col-lg-5 col-md-4 d-none d-md-flex d-lg-flex bg-dark d-flex align-items-center justify-content-center text-center" id="bg">
+        <span class="pb-5 align-self-center h1 text-light">网格化管理系统</span>
+    </div>
+    <div class="col-lg-7 col-md-8 col-12 bg-light d-flex align-items-center justify-content-center">
+        <div class="pt-3 col-5">
+            <div class="text-center">
+                <span class="h2 text-gray">网格化管理系统</span>
+                <h3 class="text-muted py-2">注册账号</h3>
+            </div>
+            
+            <div class="py-5">
+                <div class="form-floating mb-3 form-username">
+                    <input class="form-control" id="reg-account" type="text" placeholder="请输入账号" aria-describedby="accountHelp" />
+                    <label for="reg-account" class="text-muted">用户名（账号）</label>
+                    <div id="accountHelp" class="form-text">
+                        <p>必填；长度为150个字符或以下；只能包含字母、数字、特殊字符“@”、“.”、“-”和“_”。</p>
+                        <p>账号不能包含中文。</p>
+                    </div>
+                    <div class="invalid-feedback">
+                        请输入用户名
+                    </div>
+                </div>
+                <div class="form-floating mb-3 form-email">
+                    <input class="form-control" id="reg-email" type="email" placeholder="请输入电子邮箱" />
+                    <label for="reg-email" class="text-muted">电子邮箱</label>
+                    <div class="invalid-feedback">
+                        请输入电子邮箱地址
+                    </div>
+                </div>
+                <div class="form-floating mb-3 form-phone">
+                    <input class="form-control" id="reg-phone" type="number" placeholder="请输入手机号码" />
+                    <label for="reg-phone" class="text-muted">手机号码</label>
+                    <div class="invalid-feedback">
+                        请输入手机号码
+                    </div>
+                </div>
+                <div class="form-floating mb-3 form-password">
+                    <input class="form-control" id="reg-password" type="password" placeholder="请输入密码" autocomplete="new-password" aria-describedby="passwordHelp" />
+                    <div id="passwordHelp" class="form-text">
+                        <p>你的密码不能与你的其他个人信息太相似。</p>
+                        <p>你的密码必须包含至少 8 个字符。</p>
+                        <p>你的密码不能是一个常见密码。</p>
+                        <p>你的密码不能全都是数字。</p>
+                    </div>
+                    <label for="reg-password" class="text-muted">密码</label>
+                    <div class="invalid-feedback">
+                        请输入密码
+                    </div>
+                </div>
+                <div class="form-floating mb-3 form-re-password">
+                    <input class="form-control" id="repeat-reg-password" type="password" placeholder="请输入密码" autocomplete="new-password" />
+                    <label for="repeat-reg-password" class="text-muted">再次输入密码</label>
+                    <div class="invalid-feedback">
+                        请再次输入密码
+                    </div>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-success btn-lg" id="submitButton" onclick="regListener()" type="submit">注册</button>
+                </div>
+
+                <div class="pt-2 d-flex justify-content-end">
+                    <a href="{% url 'user-login-html' %}" role="button" class="btn btn-link">返回登录</a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        regFormListener()
+        checkPassword()
+    })
+    var username = '';
+    var email = '';
+    var phone = '';
+    var passwd = '';
+    var samepw = false;
+    function regFormListener(){
+        $('#reg-account').blur(function(){
+            if($(this).val() == ''){
+                $('.form-username .invalid-feedback').text("请输入用户名（账号）")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                username = ''
+            }else{
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-valid')
+                username = $(this).val()
+            }
+        })
+
+        $('#reg-email').blur(function(){
+            if($(this).val() == ''){
+                $('.form-email .invalid-feedback').text("请输入电子邮箱地址")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                email = ''
+            }else{
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-valid')
+                email = $(this).val()
+            }
+        })
+
+        $('#reg-phone').blur(function(){
+            if($(this).val() == ''){
+                $('.form-phone .invalid-feedback').text("请输入手机号码")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                phone = ''
+            }else if($(this).val().length != 11){
+                $('.form-phone .invalid-feedback').text("请输入正确的手机号码")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                phone = ''
+            }else{
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-valid')
+                phone = $(this).val()
+            }
+        })
+
+        $('#reg-password').blur(function(){
+            if($(this).val() == ''){
+                $('.form-password .invalid-feedback').text("请输入密码")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                passwd = ''
+            }else if($(this).val().length < 8){
+                $('.form-password .invalid-feedback').text("密码不能少于8个字符")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                passwd = ''
+            }else if(/^\d+$/.test($(this).val())){
+                $('.form-password .invalid-feedback').text("密码不能是纯数字")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                passwd = ''
+            }else{
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-valid')
+                passwd = $(this).val()
+            }
+        })
+
+    }
+
+    function checkPassword(){
+        $('#repeat-reg-password').blur(function(){
+            if(passwd != '' && passwd == $(this).val()){
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-valid')
+                samepw = true;
+            }else{
+                $('.form-re-password .invalid-feedback').text("两次输入的密码不一致")
+                $(this).removeClass('is-invalid','is-valid')
+                .addClass('is-invalid')
+                samepw = false;
+            }
+        })
+    }
+
+    function regListener(){
+        if(username != ''){
+            if(phone != ''){
+                if(passwd != ''){
+                    if(samepw){
+                        var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+                        var p_data = {}
+                        p_data['username'] = username
+                        p_data['email'] = email
+                        p_data['phone'] = phone
+                        p_data['password'] = passwd
+                        $.ajax({
+                            url:'/api/user-register/',
+                            type:'POST',
+                            dataType:'json',
+                            data: JSON.stringify(p_data),
+                            contentType: 'application/json; charset=UTF-8',
+                            headers:{
+                                "X-CSRFToken": CSRFtoken,
+                            },
+                            success:() => {
+                                window.location.replace("{% url 'user-regist-complete-html' %}");
+                            },
+                            error:(error) => {
+                                console.log(error)
+                                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                    .addClass('border-danger text-danger')
+                                if(error.status == 400){
+                                    $('#toast .toast-body').text("账号创建失败：手机号或邮箱已被注册")
+                                }else{
+                                    $('#toast .toast-body').text("账号创建失败："+error['responseText'])
+                                }
+                                $('#toast').toast('show');
+                            }
+                        })
+                    }else{
+                        $('#repeat-reg-password').trigger('blur')
+                    }
+                }else{
+                    $('#reg-password').trigger('blur')
+                }
+            }else{
+                $('#reg-phone').trigger('blur')
+            }
+        }else{
+            $('#reg-account').trigger('blur')
+        }
+    }
+</script>
+
+{% endblock %}

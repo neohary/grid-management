@@ -1,0 +1,158 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<head>
+    <script src="{% static 'js/house_list.js' %}"></script>
+    <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+</head>
+<title>住户总览 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>住户总览</h2>
+</div>
+
+<div class="px-lg-5">
+    <table id="table"
+        data-locale="zh-CN"
+        data-toggle="table"
+        data-sortable="true"
+        data-search="true"
+        data-pagination="true"
+        data-page-size="15"
+        data-page-list="[10, 15, 20, 50, 100, All]"
+        data-detail-view="true"
+        data-detail-view-by-click="true"
+        data-detail-view-icon="false"
+        data-detail-formatter="houseDetailFormatter"
+        >
+    </table>
+</div>
+
+<script>
+    var columns = [
+        {field:'id',title:'编号',class:"id"},
+        {field:'icon',title:' ',class:"icon",formatter:iconFormatter()},
+        {field:'village_name',title:'村庄',sortable:true,class:"village_name"},
+        {field:'grid_name',title:'微网格',sortable:true,class:"grid_name"},
+        {field:'mgridID',title:'户号',sortable:true,class:"mgridID"},
+        {field:'population',title:'人口',sortable:true,class:"population"},
+        {field:'holder_name',title:'户主',sortable:true,class:"holder_name"},
+        {field:'option',title:'操作',class:"option"}
+    ]
+    var house_data = []
+
+    $(document).ready(function(){
+        $('#toast').toast('hide');
+    })
+
+    function iconFormatter(){
+        return [
+            '<i class="fa-solid fa-caret-down"></i>'
+        ].join('')
+    }
+
+    function namelinkFormatter(id,name){
+        return [
+            '<a href="/resident/' + id +'">'+ name +'</a>'
+        ].join('')
+    }
+
+    $.ajax({
+        async:false,
+        url:'/api/houses/get_by_permission/',
+        type:'GET',
+        success:(data) => {
+            var i = 0;
+            data['houses'].forEach(element => {
+                house_data[i] = {
+                    'id':element.id,
+                    'village_name':element.village_name,
+                    'grid_name':element.grid_name,
+                    'mgridID':element.mgridID,
+                    'population':element.pop_count,
+                    'holder_name':element.holder_name,
+                    'option':operaFormatter(element.id,i)
+                }
+                i++;
+            });
+        }
+    })
+
+    function houseDetailFormatter(index,row,element){
+        detail = document.createElement('table')
+        detail.id = "d_table"
+        element.append(detail)
+        var columns = [
+            {field:'id',title:'编号',class:"id"},
+            {field:'name',title:'姓名',sortable:true,class:"name"},
+            {field:'sex',title:'性别',sortable:true,class:"sex"},
+            {field:'age',title:'年龄',sortable:true,class:"age"},
+            {field:'phone',title:'电话',sortable:true,class:"phone"},
+            {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident"},
+            {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation"},
+            {field:'note',title:'备注',sortable:true,class:"note"},
+        ]
+        var res_data = []
+        $.ajax({
+            url:'/api/houses/'+row.id+'/get_residents/',
+            type:'GET',
+            success:(data) => {
+                var i = 0;
+                data['residents'].forEach(element => {
+                    res_data[i] = {
+                        'id':element.id,
+                        'name':namelinkFormatter(element.id,element.name),
+                        'sex':element.sex_display,
+                        'age':element.age,
+                        'phone':element.phone,
+                        'isLocalResident':get_bool(element.isLocalResident),
+                        'outLocation':element.outLocation,
+                        'note':element.note
+                    }
+                    i++;
+                });
+                var table = $('#d_table').bootstrapTable({
+                    columns :columns,
+                    data: res_data
+                })
+                return table.outerHTML
+            }
+        })
+    }
+
+    $('#table').bootstrapTable({
+        columns: columns,
+        data: house_data
+    })
+</script>
+
+{% endblock %}

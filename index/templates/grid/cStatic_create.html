@@ -1,0 +1,396 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+<title>新建统计 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'static-list-html' %}" style="text-decoration: none;">统计总览 </a>
+        <span> > </span>
+        新建统计项目
+    </h2>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 col-sm-12" id="edit">
+        <div class="py-3 px-lg-5 px-2">
+            <div class="text-muted h5">编辑</div>
+            <div class="rounded border border-2 p-3 border-3 d-flex row align-items-center">
+                <div class="col-6 needs-validation" id="form-title">
+                    <label for="title" class="form-label">统计项目标题</label>
+                    <input type="text" class="form-control" id="title" placeholder="新建统计" required>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-auto needs-validation" id="form-object">
+                    <label for="object" class="form-label">统计对象</label>
+                    <select id="object" class="form-select">
+                        <option value="r">人员</option>
+                        <option value="h">住户</option>
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="col-auto needs-validation" id="form-range">
+                    <label for="range" class="form-label">统计范围</label>
+                    <select id="range" class="form-select">
+                        <option value="v">所属的村庄</option>
+                    </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+            </div>
+        </div>
+        <div class="px-lg-5 px-2" id="container">
+            
+        </div>
+        <div class="px-lg-5 px-2">
+            <div class="rounded border border-2 p-3 my-3 border-3 d-flex row align-items-center" style="border-style:dashed !important;">
+                <div class="col-12 d-grid">
+                    <button id="add-item" class="btn btn-outline-primary btn-lg">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="px-1">添加列</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 col-sm-12 row align-self-start rounded border border-3" id="preview">
+        <div class="text-muted h5 py-3">预览</div>
+        <div class="col-12 text-center">
+            <h3 id="title"></h3>
+        </div>
+        <div class="col-12">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th id="object-title">统计对象</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="object-context">统计对象示例</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-12 d-grid">
+            <div class="rounded border p-3 my-3 border-3 d-flex row align-items-center" style="border-style:dashed !important;">
+                <button id="submit" onclick="submitListener()" class="btn btn-outline-success btn-lg">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="px-1">创建统计</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    var title_data = '',
+        object_data = '',
+        range_data = '',
+        datatypes_data = {}
+
+    var index = 0
+    $('#add-item').on('click',function(){
+        $('#container').append(newItem(globalThis.index))
+        addItemListener(globalThis.index)
+        $('#form-index-'+ globalThis.index +' #form-type #type').trigger('change')
+        globalThis.index ++;
+    })
+
+    $(document).ready(function(){
+        $('#container').append(newItem(globalThis.index))
+        addItemListener(globalThis.index)
+        $('#form-index-'+ globalThis.index +' #form-type #type').trigger('change')
+        globalThis.index ++;
+        titleListener()
+        $('#form-object #object').trigger('change')
+        rangeListener()
+    })
+
+    function submitListener(){
+        //提交数据
+        if(globalThis.title_data != '' && globalThis.range_data != '' && globalThis.object_data != '' && globalThis.datatypes_data != ''){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            var p_data = {}
+            p_data['title'] = globalThis.title_data
+            p_data['range'] = globalThis.range_data
+            p_data['obj'] = globalThis.object_data
+            p_data['datatypes'] = globalThis.datatypes_data
+            console.log(JSON.stringify(p_data))
+            //如果range = m 则 mgrid = request.user.mgrid
+            $.ajax({
+                url:'/api/stemplate/',
+                type:'POST',
+                dataType:'json',
+                data: JSON.stringify(p_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(element) => {
+                    window.location.replace("/statistics/list")
+                },
+                error:(error) => {
+                    console.log(error)
+                }
+            })
+        }else{
+            //信息框弹窗提示
+        }
+    }
+
+    function newItem(index){
+        return [
+            '<div id="form-index-'+ index +'" class="rounded border border-2 p-3 my-2 border-3 d-flex row align-items-center">',
+            '<div class="col-4" id="form-type">',
+            '    <label for="type" class="form-label">统计类型</label>',
+            '    <select class="form-select" id="type">',
+            '        <option value="int">数字</option>',
+            '        <option value="str">文本</option>',
+            '        <option value="bool">布尔</option>',
+            '        <option value="datetime">日期</option>',
+            '        <option value="select">选项</option>',
+            '    </select>',
+            '</div>',
+            '<div class="col needs-validation" id="form-name">',
+            '    <label for="name" class="form-label">名称</label>',
+            '    <input type="text" class="form-control" id="name" placeholder="新建列 '+ index +'" >',
+            '    <div class="invalid-feedback"></div>',
+            '</div>',
+            '<div class="col-auto" id="form-required">',
+            '    <input type="checkbox" class="form-check-input" value="true" id="required-'+index+'">',
+            '    <label for="required-'+index+'" class="form-check-label">',
+            '        必填',
+            '    </label>',
+            '</div>',
+            '<div class="col-auto" id="form-remove">',
+            '    <button id="remove" onclick="removeItem('+ index +')" class="btn btn-danger">',
+            '        <i class="fa-solid fa-xmark"></i>',
+            '    </button>',
+            '</div>',
+        '</div>'
+        ].join('')
+    }
+
+    function addItemListener(index){
+        $('#form-index-'+ index +' #form-type #type').on('change',function(){
+            //console.log($(this).val())
+            $('#required-'+index).prop('checked',false)
+            addToTable(index,$(this).val())
+            if($(this).val() == 'select'){
+                var select = document.createElement('input')
+                select.id = 'select'
+                select.setAttribute('type','text')
+                select.setAttribute('placeholder','选项1,选项2,选项3, ...')
+                select.classList.add('form-control')
+                var label = document.createElement('label')
+                label.setAttribute('for','select')
+                label.classList.add('form-label')
+                label.innerText = "选项（插入英文逗号分隔选项）"
+                var div = document.createElement('div')
+                div.appendChild(label)
+                div.appendChild(select)
+                div.classList.add('py-3')
+                div.id = 'form-select-' + index
+                $(this).parent().parent().append(div)
+                selectListener(index)
+            }else if($(this).val() == 'datetime'){
+                /*$('.table tbody tr #td-'+index+' #date').on('change',function(){
+                    console.log($(this).val())//日期的回调 在预览里并不需要收集
+                })*/
+            }else{
+                $('#form-select-' + index).remove()
+            }
+        })
+    }
+
+    function addToTable(index,type){
+        $('.table thead tr #th-'+index).remove()
+        $('.table tbody tr #td-'+index).remove()
+        var th = document.createElement('th')
+        th.id = 'th-'+index
+        $(".table thead tr").append(th)
+        var input;
+        input = document.createElement('input')
+        if(type == 'int'){
+            input.setAttribute('type','number')
+            input.classList.add('form-control')
+        }else if(type == 'str'){
+            input.setAttribute('type','text')
+            input.classList.add('form-control')
+        }else if(type == 'bool'){
+            input.setAttribute('type','checkbox')
+            input.classList.add('form-check-input')
+        }else if(type == 'datetime'){
+            input.setAttribute('type','date')
+            input.classList.add('form-control')
+            input.id = "date"
+        }else if(type == 'select'){
+            input = document.createElement('select')
+            input.classList.add('form-select')
+        }
+        var td = document.createElement('td')
+        td.id = 'td-'+index
+        td.appendChild(input)
+
+        $('#form-index-'+index+' #form-required input').on('click',function(){
+            if($(this).is(':checked')){
+                $('.table tbody tr #td-'+index+' input').prop('placeholder','必填')
+                if(globalThis.datatypes_data['r'+index][2] != 'select'){
+                    globalThis.datatypes_data['r'+index].length = 2
+                    globalThis.datatypes_data['r'+index].push('required')
+                }
+            }else{
+                $('.table tbody tr #td-'+index+' input').prop('placeholder','')
+                if(globalThis.datatypes_data['r'+index][2] != 'select'){
+                    globalThis.datatypes_data['r'+index].length = 2
+                }
+            }
+            //console.log(globalThis.datatypes_data['r'+index])
+        })
+
+        $('.table tbody tr').append(td)
+        $('#form-index-'+index+' #name').blur(function(){
+            if($(this).val() == ''){
+                $('.table thead #th-'+index).text("新建列 "+index)
+                $('.table thead #th-'+index).addClass('text-muted')
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+                $('#form-index-'+index+' #form-name .invalid-feedback').text("请输入列标题")
+                globalThis.datatypes_data['r'+index] = ["新建列 "+index,type]
+            }else{
+                $(this).removeClass('is-invalid')
+                $('.table thead #th-'+index).removeClass('text-muted')
+                $('.table thead #th-'+index).text($(this).val())
+                globalThis.datatypes_data['r'+index] = [$(this).val(),type]
+            }
+            //console.log(globalThis.datatypes_data)
+        })
+        $('#form-index-'+index+' #name').trigger('blur')
+    }
+
+    function removeItem(index) {
+        $('#form-index-'+index).remove()
+        $('.table thead tr #th-'+index).remove()
+        $('.table tbody tr #td-'+index).remove()
+        delete globalThis.datatypes_data['r'+index]
+        //console.log(globalThis.datatypes_data)
+    }
+
+    function titleListener(){
+        $('#preview #title').text("新建统计")
+        $('#preview #title').addClass('text-muted')
+        $('#form-title #title').blur(function(){
+            if($(this).val() == ''){
+                $('#preview #title').text("新建统计")
+                $('#preview #title').addClass('text-muted')
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+                $('#form-title .invalid-feedback').text("请输入标题")
+                globalThis.title_data = ''
+            }else{
+                $('#preview #title').removeClass('text-muted')
+                $(this).removeClass('is-invalid')
+                $('#preview #title').text($(this).val())
+                globalThis.title_data = $(this).val()
+            }
+        })
+        $('#form-object #object').on('change',function(){
+            if($(this).val() == ''){
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+                $('#form-object .invalid-feedback').text("请选择统计对象")
+                $('.table #object-title').prop('hidden',true)
+                $('.table #object-title').text('')
+                $('.table #object-context').prop('hidden',true)
+                $('.table #object-context').text('')
+                globalThis.object_data = ''
+            }else{
+                $(this).removeClass('is-invalid')
+                $('.table #object-title').prop('hidden',false)
+                $('.table #object-context').prop('hidden',false)
+                var name,context
+                if($(this).val() == 'r'){
+                    name = "人员"
+                    context = "人员信息"
+                    globalThis.object_data = 'r'
+                }else if($(this).val() == 'h'){
+                    name = "住户"
+                    context = "住户信息"
+                    globalThis.object_data = 'h'
+                }else if($(this).val() == 'g'){
+                    name = "微网格"
+                    context = "微网格信息"
+                    globalThis.object_data = 'g'
+                }
+                $('.table #object-title').text(name)
+                $('.table #object-context').text(context)
+            }
+        })
+    }
+
+    function selectListener(index) {
+        $('#form-select-'+index+' #select').blur(function(){
+            //console.log($(this).val())
+            $('.table tbody tr #td-'+index+" select").empty()
+            globalThis.datatypes_data['r'+index].length = 2
+            var text = $(this).val()
+            var array = text.split(',')
+            array.forEach(element => {
+                var option = document.createElement('option')
+                option.setAttribute('value',element)
+                option.innerText = element
+                $('.table tbody tr #td-'+index+" select").append(option)
+                globalThis.datatypes_data['r'+index].push(element)
+            });
+        })
+    }
+
+    function rangeListener(){
+        $('#range').on('change',function(){
+            if($(this).val() == ''){
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+                $('#form-range .invalid-feedback').text("请选择统计范围")
+                globalThis.range_data = ''
+            }else{
+                $(this).removeClass('is-invalid')
+                globalThis.range_data = $(this).val()
+            }
+            
+        })
+    }
+    
+</script>
+{% endblock %}

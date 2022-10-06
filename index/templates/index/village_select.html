@@ -1,0 +1,216 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+{% load static %}
+<style>
+    .btn-primary {
+        background-color: #edf0f6 !important;
+        color:#212529 !important;
+        text-align: left !important;
+    }
+    .btn-primary:hover {
+        background-color: #fff !important;;
+    }
+    .btn-primary:active {
+        background-color: #edf0f6 !important;;
+    }
+</style>
+<title>选择村庄 - {{title}}</title>
+<!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <p>欢迎使用网格化管理系统</p>
+    <h2>选择所属村庄</h2>
+</div>
+
+<div class="px-lg-5 d-flex justify-content-center m-3" >
+    <div class="col-lg-6 col-12 text-center rounded border border-warning shadow-sm p-3" id="approval">
+        <div class="h4">你有一条已提交的申请</div>
+        <input type="hidden" id="approval_id" value="">
+        <div class="h4 village_display text-center">xx村</div>
+        <span>状态：待审批</span>
+        <div class="d-grid">
+            <button class="btn btn-danger" onclick="confirmCancel()" data-bs-toggle="modal" data-bs-target="#myModal">撤销申请</button>
+        </div>
+    </div>
+</div>
+
+<div class="px-lg-5 row d-flex justify-content-center village-container">
+    <div id="village-id" class="col-3 m-3 p-3 rounded border btn btn-primary shadow-sm" role="button">
+        <p class="h2 px-3 name">xx村</p>
+        <p class="h4 pt-1 px-5 d-flex justify-content-between">
+            <span data-bs-toggle="tooltip" title="微网格" class="px-1">
+                <i class="fa-solid fa-border-all"></i>
+                <span class="mgrid_count">6</span>
+            </span>
+            <span data-bs-toggle="tooltip" title="住户" class="px-1">
+                <i class="fa-solid fa-house"></i>
+                <span class="house_count">32</span>
+            </span>
+            <span data-bs-toggle="tooltip" title="人口" class="px-1">
+                <i class="fa-solid fa-user"></i>
+                <span class="resident_count">64</span>
+            </span>
+            <span data-bs-toggle="tooltip" title="管理人员" class="px-1">
+                <i class="fa-solid fa-circle-user"></i>
+                <span class="user_count">5</span>
+            </span>
+        </p>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        load_village()
+        getApproval()
+        $('#approval').hide()
+    })
+
+    function load_village() {
+        $.ajax({
+            url:'/api/village/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                $('.village-container').empty()
+                data.forEach(element => {
+                    $('.village-container').append(create_cell(element))
+                });
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                })
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function create_cell(data) {
+        return [
+           ' <div id="village-'+ data.id +'" class="col-lg-3 col-6 m-3 p-3 rounded border btn btn-primary shadow-sm" role="button" onclick="confirmApply('+ data.id +')" data-bs-toggle="modal" data-bs-target="#myModal">',
+           '     <div class="h2 px-lg-3 name">'+ data.name +'</div>',
+           '     <div class="h4 pt-1 px-lg-4 d-flex justify-content-between">',
+           '         <div data-bs-toggle="tooltip" title="微网格" class="px-1 text-center">',
+           '             <i class="fa-solid fa-border-all"></i>',
+           '             <span class="mgrid_count">'+ data.mgrid_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="住户" class="px-1 text-center">',
+           '             <i class="fa-solid fa-house"></i>',
+           '             <span class="house_count">'+ data.houses_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="人口" class="px-1 text-center">',
+           '             <i class="fa-solid fa-user"></i>',
+           '             <span class="resident_count">'+ data.pop_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="管理人员" class="px-1 text-center">',
+           '             <i class="fa-solid fa-circle-user"></i>',
+           '             <span class="user_count">'+ data.user_count +'</span>',
+           '         </div>',
+           '     </div>',
+           ' </div>'
+        ].join('')
+    }
+
+    function confirmApply(id){
+        //console.log(id)
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要申请加入 "+$('#village-'+id+' .name').text()+" 吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'confirm'
+        confirm.classList.add('btn','btn-success')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#confirm').remove();
+        $('.modal-footer').append(confirm);
+        $('#confirm').on('click',function(){
+            window.location.replace("/select-village/"+id);
+        })
+    }
+
+    function getApproval(){
+        $.ajax({
+            url:'/api/user-approval/get_live_by_user/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                //console.log(data)
+                if(data){
+                    $('#approval #approval_id').val(data.id)
+                    $('#approval .village_display').text(data.village_display)
+                    $('#approval').show()
+                }
+            }
+        })
+    }
+
+    function confirmCancel(){
+        $('.modal-title').text("确认")
+        $('.modal-body').text("确定要撤销加入 "+$('.village_display').text()+" 的申请吗？")
+        var confirm = document.createElement('button')
+        confirm.id = 'confirm'
+        confirm.classList.add('btn','btn-success')
+        confirm.innerText = "确定"
+        confirm.setAttribute('data-bs-dismiss','modal')
+        $('#confirm').remove();
+        $('.modal-footer').append(confirm);
+        $('#confirm').on('click',function(){
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            $.ajax({
+                url:'/api/user-approval/'+$('#approval_id').val()+'/',
+                type:'DELETE',
+                dataType:'json',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:() => {
+                    $('#approval').remove()
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("你的申请已撤销")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    //console.log(error)
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("撤销失败："+error)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+</script>
+{% endblock %}

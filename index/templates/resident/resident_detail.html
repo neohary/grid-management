@@ -1,0 +1,317 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% csrf_token %}
+<title>人员详情 - {{title}}</title>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+<div class="py-3 px-lg-5">
+    <h2>
+        <a href="{% url 'resident-list-html' %}" style="text-decoration: none;">人员总览 </a>
+        <span> > </span>
+        <span> 人员详情 <span id="resident-name-display" class="h4"></span></span>
+    </h2>
+</div>
+
+<div class="px-lg-5">
+    <div class="form-group py-2" id="form-name">
+        <label for="form-name-input">
+            <h4>姓名</h4>
+        </label>
+        <input type="text" id="form-name-input" class="form-control">
+        <div class="invalid-feedback"></div>
+    </div>
+
+    <div class="form-group py-2">
+        <label for="form-sex-input">
+            <h4>性别</h4>
+        </label>
+        <select class="form-select" id="form-sex-input">
+            <option value="m">男</option>
+            <option value="f">女</option>
+        </select>
+    </div>
+
+    <div class="form-group py-2" id="form-idnumber">
+        <label for="form-idnumber-input">
+            <h4>身份证号</h4>
+        </label>
+        <input type="text" id="form-idnumber-input" class="form-control">
+        <div class="invalid-feedback"></div>
+    </div>
+
+    <div class="form-group py-2">
+        <label for="form-phone-input">
+            <h4>电话号码</h4>
+        </label>
+        <input type="number" id="form-phone-input" class="form-control">
+    </div>
+
+    <div class="form-check py-2">
+        <label class="form-check-label" for="form-islocal-input">
+            <h4>是否常住</h4>
+        </label>
+        <input type="checkbox" id="form-islocal-input" class="form-check-input">
+    </div>
+
+    <div class="form-group py-2">
+        <label for="form-outlocation-input">
+            <h4>在外地点</h4>
+        </label>
+        <input type="text" id="form-outlocation-input" class="form-control">
+    </div>
+
+    <div class="form-group py-2">
+        <label for="form-house-input">
+            <h4>户</h4>
+        </label>
+        <input type="text" list="houselist" id="form-house-input" class="form-control">
+        <datalist id="houselist"></datalist>
+    </div>
+
+    <div class="form-group py-2">
+        <label for="form-note-input">
+            <h4>备注</h4>
+        </label>
+        <input type="text" id="form-note-input" class="form-control">
+    </div>
+</div>
+
+<div class="px-lg-5 py-2 d-grid">
+    <button class="btn btn-success btn-lg" id="submit">更新信息</button>
+</div>
+
+<script>
+    var name_data,
+            sex_data,
+            idnumber_data,
+            phone_data,
+            islocal_data,
+            outlocation_data,
+            house_data,
+            note_data
+
+    function houseListener(){
+        $.ajax({
+            url: '/api/houses/get_by_permission/',
+            type:"GET",
+            dataType:"json",
+            success:(data) => {
+                $('#houselist').empty()
+                data.houses.forEach(element => {
+                    var option = document.createElement('option')
+                    option.setAttribute('value',element.id)
+                    option.text = element.house_name
+                    $('#houselist').append(option)
+                })
+            }
+        })
+        $('#form-house-input').blur(function(){
+            if($(this).val() != ''){
+                var id = $(this).val()
+                $.ajax({
+                    url:'/api/houses/'+id+'/',
+                    type:'GET',
+                    success:(response) => {
+                        $('#form-house-input').removeClass('is-invalid')
+                        globalThis.house_data = response.id
+                    },
+                    error:(error) => {
+                        $('.form-house .invalid-feedback').text("出现错误："+error.responseJSON.message)
+                        globalThis.house_data = undefined
+                        $('#form-house-input').removeClass('is-invalid')
+                            .addClass('is-invalid')
+                    }
+                })
+            }
+        })
+    }
+
+    function loadResidentInfo(){
+        $.ajax({
+            url:'/api/residents/'+'{{pk}}'+'/',
+            type:'GET',
+            success:(data) => {
+                //console.log(data)
+                document.title = data.name + " - {{title}}"
+                $('#resident-name-display').text(data.name + " " + data.sex_display + " " + data.IDnumber)
+                $('#form-name-input').val(data.name)
+                $('#form-sex-input').val(data.sex)
+                $('#form-idnumber-input').val(data.IDnumber)
+                $('#form-phone-input').val(data.phone)
+                if(data.isLocalResident){
+                    $('#form-islocal-input').prop('checked',true)
+                }else{
+                    $('#form-islocal-input').prop('checked',false)
+                }
+                $('#form-outlocation-input').val(data.outLocation)
+                $('#form-house-input').val(data.house_name)
+                $('#form-note-input').val(data.note)
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function nameListener(){
+        $('#form-name-input').blur(function(){
+            if($(this).val() == ''){
+                $('.form-name .invalid-feedback').text("姓名不能为空")
+                globalThis.name_data = undefined
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+            }else{
+                $(this).removeClass('is-invalid')
+                globalThis.name_data = $(this).val()
+            }
+        })
+        $('#form-name-input').on('input',function(){
+            $(this).removeClass('is-invalid')
+        })
+    }
+
+    function sexFooterListener(){
+        $('#form-sex-input').on('change',function(){
+            globalThis.sex_data = $(this).val()
+        })
+    }
+
+    function IDnumFooterListener(){
+        $('#form-idnumber-input').blur(function(){
+            var num = $(this).val()
+            num = num.toUpperCase()
+            if(!(/(^\d{15}$)|(^\d{17}([0-9]|X)$)/.test(num))){
+                $('.form-idnumber .invalid-feedback').text("身份证号有误/不能为空")
+                globalThis.idnumber_data = undefined
+                $(this).removeClass('is-invalid')
+                    .addClass('is-invalid')
+            }else{
+                globalThis.idnumber_data = num
+                $(this).removeClass('is-invalid')
+            }
+        })
+    }
+
+    function islocalListener(){
+        $('#form-islocal-input').on('click',function(){
+            if($(this).is(":checked")){
+                globalThis.islocal_data = true
+            }else{
+                globalThis.islocal_data = false
+            }
+        })
+    }
+
+    function outlocationListener(){
+        $('#form-outlocation-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.outlocation_data = $(this).val()
+            }else{
+                globalThis.outlocation_data = ''
+            }
+        })
+    }
+
+    function noteFooterListener(){
+        $('#form-note-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.note_data = $(this).val()
+            }else{
+                globalThis.note_data = ''
+            }
+        })
+    }
+
+    function phoneListener(){
+        $('#form-phone-input').blur(function(){
+            if($(this).val != ''){
+                globalThis.phone_data = $(this).val()
+            }else{
+                globalThis.phone_data = ''
+            }
+        })
+    }
+    function resetGlobalparams(){
+        globalThis.name_data = undefined
+        globalThis.sex_data = undefined
+        globalThis.phone_data = undefined
+        globalThis.islocal_data = undefined
+        globalThis.outlocation_data = undefined
+        globalThis.house_data = undefined
+        globalThis.note_data = undefined
+    }
+
+    function submitListener(){
+        $('#submit').on('click',function(){
+            f_data = {}
+            if(globalThis.name_data && globalThis.name_data != ''){
+                f_data['name'] = globalThis.name_data
+            }else{
+                $('#form-name-input').trigger('blur')
+            }
+            if(globalThis.idnumber_data && globalThis.idnumber_data != ''){
+                f_data['IDnumber'] = globalThis.idnumber_data
+            }else{
+                $('#form-idnumber-input').trigger('blur')
+            }
+            if(globalThis.sex_data){f_data['sex'] = globalThis.sex_data}
+            if(globalThis.phone_data){f_data['phone'] = globalThis.phone_data}
+            if(globalThis.islocal_data != undefined){f_data['isLocalResident'] = globalThis.islocal_data}
+            if(globalThis.outlocation_data){f_data['outLocation'] = globalThis.outlocation_data}
+            if(globalThis.note_data){f_data['note'] = globalThis.note_data}
+            if(globalThis.house_data){f_data['b_house'] = globalThis.house_data}
+            //AJAX更新
+            var CSRFtoken = $('input[name=csrfmiddlewaretoken]').val();
+            //console.log(JSON.stringify(f_data))
+            $.ajax({
+                url:'/api/residents/'+'{{pk}}'+'/',
+                type:'PUT',
+                dataType:'json',
+                data: JSON.stringify(f_data),
+                contentType: 'application/json; charset=UTF-8',
+                headers:{
+                    "X-CSRFToken": CSRFtoken,
+                },
+                success:(data) => {
+                    resetGlobalparams()
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-success text-success')
+                    $('#toast .toast-body').text("更新成功")
+                    $('#toast').toast('show');
+                },
+                error:(error) => {
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("更新失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
+                }
+            })
+        })
+    }
+
+    $(document).ready(function(){
+        loadResidentInfo()
+        nameListener()
+        sexFooterListener()
+        IDnumFooterListener()
+        islocalListener()
+        outlocationListener()
+        phoneListener()
+        noteFooterListener()
+        houseListener()
+        submitListener()
+        $('#toast').toast('hide');
+    })
+</script>
+
+{% endblock %}

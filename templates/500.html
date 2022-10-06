@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row min-vh-100 bg-dark text-light">
+    <div class="d-flex justify-content-center align-items-center">
+        <div class="col-lg-6 col-12 p-3 px-5 mx-lg-5 m-lg-3 border border-2 border-danger shadow-sm rounded text-center d-grid">
+            <p class="h2"><strong>500</strong></p>
+            <p>内部服务器错误</p>
+            <p>如果此错误多次出现，请联系管理员</p>
+            <button class="btn btn-primary" onclick="history.back()">返回</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

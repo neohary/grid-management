@@ -1,0 +1,227 @@
+{% extends "base_generic.html" %}
+{% block content %}
+<title>首页 - {{title}}</title>
+
+<style>
+    .card {
+        background-color: #ffffff;
+        min-width: 256px;
+        min-height: 128px;
+    }
+</style>
+<!-- 
+    显示的内容
+    个人信息
+    村庄信息
+    微网格数量
+    人员数量
+    住户数量
+    用户数量
+    正在进行的统计
+    最近的通知
+ -->
+
+ <!-- 模态框 -->
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <!-- 模态框头部 -->
+            <div class="modal-header">
+                <h4 class="modal-title">模态框标题</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <!-- 模态框内容 -->
+                <div class="modal-body">
+                    模态框内容..
+                </div>
+                <!-- 模态框底部 -->
+                <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 信息框 -->
+<div class="sticky-top">
+    <div class="toast position-absolute m-3 top-0 end-0 border-success text-success" id="toast">
+        <div class="toast-body">
+           Toast 一些内容
+        </div>
+      </div>
+</div>
+
+ <div class="p-lg-3">
+    {% if user.is_superuser %}
+    <div class="row d-flex village-container"></div>
+    {% else %}
+    <div class="d-flex" style="flex-wrap:wrap !important;">
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">村庄</div>
+                <div class="h5"><strong id="village-name">xxx</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-house-chimney fa-2xl"></i>
+            </div>
+        </div>
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">人口</div>
+                <div class="h5"><strong id="resident-count">999</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-user fa-2xl"></i>
+            </div>
+        </div>
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">住户</div>
+                <div class="h5"><strong id="house-count">999</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-house fa-2xl"></i>
+            </div>
+        </div>
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">微网格</div>
+                <div class="h5"><strong id="mgrid-count">999</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-border-all fa-2xl"></i>
+            </div>
+        </div>
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">用户</div>
+                <div class="h5"><strong id="user-count">999</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-circle-user fa-2xl"></i>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <div class="d-flex" style="flex-wrap:wrap !important;">
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">用户名</div>
+                <div class="h5"><strong id="username">xxx</strong></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-circle-user fa-2xl"></i>
+            </div>
+        </div>
+        <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
+            <div class="flex-row pt-2 px-2">
+                <div class="h5 text-primary">我的权限</div>
+                <div class="h5" id="group-display"></div>
+            </div>
+            <div class="ml-3 text-muted px-3">
+                <i class="fa-solid fa-circle-user fa-2xl"></i>
+            </div>
+        </div>
+    </div>
+ </div>
+
+
+ <script>
+    $(document).ready(function(){
+        {% if user.is_superuser %}
+        load_admin_view()
+        {% else %}
+        load_data()
+        {% endif %}
+        load_user_data()
+    })
+    function load_data() {
+        $.ajax({
+            url:'/api/village/{{user.profile.village.id}}/',
+            type:'GET',
+            success:(data) => {
+                //console.log(data)
+                $('#village-name').text(data.name)
+                $('#resident-count').text(data.pop_count)
+                $('#house-count').text(data.houses_count)
+                $('#mgrid-count').text(data.mgrid_count)
+                $('#user-count').text(data.user_count)
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+    
+    function load_user_data() {
+        $.ajax({
+            url:'/api/user/{{user.id}}/',
+            type:'GET',
+            success:(data) => {
+                //console.log(data)
+                $('#username').text(data.username)
+                $('#group-display').html(data.groups_display)
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function load_admin_view() {
+        $.ajax({
+            url:'/api/village/',
+            type:'GET',
+            dataType:'json',
+            success:(data) => {
+                $('.village-container').empty()
+                data.forEach(element => {
+                    $('.village-container').append(create_cell(element))
+                });
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl)
+                })
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("出现错误，请稍后再试："+error['responseJSON'])
+                $('#toast').toast('show');
+            }
+        })
+    }
+
+    function create_cell(data) {
+        return [
+           ' <div id="village-'+ data.id +'" class="col-lg-3 col-6 m-3 p-3 rounded border card shadow-sm">',
+           '     <div class="h3 px-lg-3 pt-2 name">'+ data.name +'</div>',
+           '     <div class="h4 pt-1 px-lg-4 d-flex justify-content-between">',
+           '         <div data-bs-toggle="tooltip" title="微网格" class="px-1 text-center">',
+           '             <i class="fa-solid fa-border-all"></i>',
+           '             <span class="mgrid_count">'+ data.mgrid_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="住户" class="px-1 text-center">',
+           '             <i class="fa-solid fa-house"></i>',
+           '             <span class="house_count">'+ data.houses_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="人口" class="px-1 text-center">',
+           '             <i class="fa-solid fa-user"></i>',
+           '             <span class="resident_count">'+ data.pop_count +'</span>',
+           '         </div>',
+           '         <div data-bs-toggle="tooltip" title="管理人员" class="px-1 text-center">',
+           '             <i class="fa-solid fa-circle-user"></i>',
+           '             <span class="user_count">'+ data.user_count +'</span>',
+           '         </div>',
+           '     </div>',
+           ' </div>'
+        ].join('')
+    }
+ </script>
+
+{% endblock %}
