@@ -109,8 +109,11 @@ class Profile(models.Model): #扩展用户模型
 @receiver(post_save,sender=User)
 def create_user_profile(sender,instance,created,**kwargs):
     if created:
-        group = Group.objects.get(name='未授权')
-        instance.groups.add(group)
+        try:
+            group = Group.objects.get(name='未授权')
+            instance.groups.add(group)
+        except:
+            pass
         Profile.objects.create(user=instance)
 
 @receiver(post_save,sender=User)
