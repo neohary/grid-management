@@ -1,1 +1,1 @@
-web: gunicorn grid-management.wsgi --log-file -
+web: gunicorn grid_management.wsgi --log-file -
