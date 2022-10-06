@@ -381,7 +381,7 @@ function house_CreateForm(housedata){
             $('#village').prop('disabled',true);
             $('#village').val(opt.value);
         };
-        house_ClearFormData();
+        $('#house_mgrid_id').val('');
         if(housedata){
             $('#village').val(housedata['village'])
             $('#house_mgrid_id').val(housedata['mgridID'])
@@ -418,7 +418,6 @@ function house_ClearFormData(){
     $('#village').val("");
     $('#mgrid').empty();
     $('#mgrid').val("");
-    $('#house_mgrid_id').val('');
     $('#updatefields').hide();
     $('#editGeo').hide();
     $('#delete').off();
