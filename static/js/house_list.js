@@ -17,7 +17,7 @@ function get_bool(bool){
 function operaFormatter(id,index){
     return [
         '<div class="text-center">',
-        '    <a href="/village/'+id+'" role="button" class="btn btn-primary mx-lg-1 my-lg-0 my-1" id="info-'+id+'">',
+        '    <a href="/house/'+id+'" role="button" class="btn btn-primary mx-lg-1 my-lg-0 my-1" id="info-'+id+'">',
         '        <i class="fa-solid fa-list"></i> 查看详情',
         '    </a>',
         '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete-'+id+'" data-bs-toggle="modal" data-bs-target="#myModal">',
