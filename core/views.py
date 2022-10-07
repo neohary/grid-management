@@ -57,6 +57,8 @@ class UserViewSet(viewsets.ViewSet):
     def kick(self,request,pk):
         if request.user.has_perm('grid.can_edit_user'):
             obj = get_object_or_404(User,pk=pk)
+            if obj == request.user:
+                return Response({'message':'你不能移除自己，如果需要移除自己，请联系管理员'},status=status.HTTP_400_BAD_REQUEST)
             obj.groups.clear()
             group = Group.objects.filter(name="未授权").get()
             obj.groups.add(group)
