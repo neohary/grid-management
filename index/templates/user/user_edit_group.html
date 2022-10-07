@@ -132,7 +132,7 @@
                 //console.log(data)
                 $('#name').text(data.username)
                 $('#village').text(data.village[0])
-                $('#mgrid').val(data.mgrid[0])
+                $('#mgrid').text(data.mgrid[0])
                 data['groups'].forEach(element => {
                     $("#"+element[1]).prop('checked', true);
                 });
