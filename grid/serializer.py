@@ -92,6 +92,8 @@ class CustomStaticsTemplateDetailSerializer(serializers.ModelSerializer):
             return CustomStaticsTemplate.village.name
         elif CustomStaticsTemplate.range == 'g':
             return str(CustomStaticsTemplate.mgrid)
+        elif CustomStaticsTemplate.range == 'a':
+            return "全局"
     
     def get_object_display(self,CustomStaticsTemplate):
         return CustomStaticsTemplate.display_object()

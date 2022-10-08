@@ -4,6 +4,7 @@
 {% load static %}
 <head>
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+    <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
 </head>
 <title>微网格总览 - {{title}}</title>
 <!-- 模态框 -->
@@ -52,6 +53,7 @@
         data-detail-view-icon="false"
         data-detail-formatter="mgridDetailFormatter"
         data-show-footer="true"
+        data-filter-control="true"
         >
     </table>
 </div>
@@ -60,7 +62,7 @@
     var columns = [
         {field:'id',title:'编号',class:"id"},
         {field:'icon',title:' ',class:"icon",formatter:iconFormatter()},
-        {field:'village_name',title:'村庄',sortable:true,class:"village_name"},
+        {field:'village_name',title:'村庄',sortable:true,class:"village_name",filterControl:'select'},
         {field:'name',title:'微网格名称',sortable:true,class:"name"},
         {field:'houses_count',title:'户数',sortable:true,class:"houses"},
         {field:'pop_count',title:'人口',sortable:true,class:"pop"},
@@ -70,7 +72,9 @@
     var mgrid_data = []
 
     $(document).ready(function(){
+        {% if 'grid.can_c/d_mgrid' in perms %}
         load_Form()
+        {% endif %}
         $('#toast').toast('hide');
     })
 
@@ -159,10 +163,12 @@
             '    <a href="/grid/'+id+'" class="btn btn-primary mx-lg-1 my-lg-0 my-1" role="button">',
             '        <i class="fa-solid fa-list"></i> 查看详情',
             '    </a>',
+            {% if 'grid.can_c/d_mgrid' in perms %}
             '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete" data-bs-toggle="modal" data-bs-target="#myModal">',
             '        <i class="fa-solid fa-trash"></i> 删除',
             '    </button>',
             '</div>'
+            {% endif %}
         ].join('')
     }
 
@@ -170,7 +176,9 @@
         columns: columns,
         data: mgrid_data,
         onPostBody:function(){
+            {% if 'grid.can_c/d_mgrid' in perms %}
             load_Form()
+            {% endif %}
         }
     })
 

@@ -381,7 +381,6 @@ function house_CreateForm(housedata){
             $('#village').prop('disabled',true);
             $('#village').val(opt.value);
         };
-        $('#house_mgrid_id').val('');
         if(housedata){
             $('#village').val(housedata['village'])
             $('#house_mgrid_id').val(housedata['mgridID'])

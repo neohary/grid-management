@@ -61,6 +61,8 @@ def NavbarTabs(request):
     return {'NavbarTabs':NavbarTabs_html}
 
 from core.models import UserApproval
+from grid.models import CustomStaticsTemplate
+from django.db.models import Q
 
 def get_live_user_approval_count(request):
     #如果用户是村管理
@@ -69,6 +71,17 @@ def get_live_user_approval_count(request):
         return {'live_user_approval_count':count}
     else:
         return {'live_user_approval_count':None}
+
+def get_live_static_count(request):
+    if request.user.is_authenticated:
+        try:
+            count = CustomStaticsTemplate.objects.filter(Q(village=request.user.profile.village) | Q(range='a')).exclude(closed=True).exclude(deleted=True).count()
+        except:
+            count = None
+        print(count)
+        return {'live_static_count':count}
+    else:
+        return {'live_static_count':None}
 
 def get_map_key(request):
     if request.user.is_authenticated:

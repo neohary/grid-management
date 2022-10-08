@@ -73,6 +73,7 @@
         </label>
         <input type="text" list="houselist" id="form-house-input" class="form-control">
         <datalist id="houselist"></datalist>
+        <div id="housename" class="text-success"></div>
     </div>
 
     <div class="form-group py-2">
@@ -82,11 +83,11 @@
         <input type="text" id="form-note-input" class="form-control">
     </div>
 </div>
-
+{% if 'resident.can_edit_resident' in perms %}
 <div class="px-lg-5 py-2 d-grid">
     <button class="btn btn-success btn-lg" id="submit">更新信息</button>
 </div>
-
+{% endif %}
 <script>
     var name_data,
             sex_data,
@@ -121,8 +122,10 @@
                     success:(response) => {
                         $('#form-house-input').removeClass('is-invalid')
                         globalThis.house_data = response.id
+                        $('#housename').text(response.house_name)
                     },
                     error:(error) => {
+                        $('#housename').text('')
                         $('.form-house .invalid-feedback').text("出现错误："+error.responseJSON.message)
                         globalThis.house_data = undefined
                         $('#form-house-input').removeClass('is-invalid')

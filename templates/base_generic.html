@@ -14,16 +14,34 @@
         <script type="text/javascript" src="//api.map.baidu.com/api?v=1.0&&type=webgl&ak={{map_key}}"></script>
         <link rel="stylesheet" href="{% static 'css/base.css' %}">
     </head>
+    <style>
+        .bg-red {
+            background-color: #741d1d;
+        }
+        .btn-dark {
+            border-color: #741d1d !important;
+            background-color: #741d1d !important;
+        }
+        .btn-dark:hover {
+            border-color: #ad3535 !important;
+            background-color: #ad3535 !important;
+        }
+    </style>
     <body>
         {% if not is_underMaintaining %}
         <div class="container-fluid bg-light">
             {% block sidebar %}
             {% csrf_token %}
             <div class="row flex-nowrap">
-                <div class="col-auto col-md-3 col-lg-2 col-xl-2 px-sm-2 px-0 bg-dark">
+                <div class="col-auto col-md-3 col-lg-2 col-xl-2 px-sm-2 px-0 bg-red">
                     <div class="sticky-top d-flex flex-column d-grid gap-1 mx-auto px-1 pt-2 text-white min-vh-100">
                         <a href="/" class="d-flex align-items-center px-2 pt-2 pb-3 mb-md-0 me-md-auto text-light text-decoration-none">
-                            <span class="h2 d-none d-sm-inline">{{title}}</span>
+                            <div class="row d-lg-flex d-none d-sm-inline">
+                                <div class="col-12 bg-light p-2 text-center rounded">
+                                    <img src="{% static 'img/logo1.png' %}" width="205" height="90" class="d-none d-sm-inline">
+                                </div>
+                                <p class="h4 pt-2 col-12 d-none d-sm-inline ">{{title}}</p>
+                            </div>
                         </a>
                         {% load get_context_processor %}
                         {% load notifications_tags %}
@@ -37,7 +55,7 @@
                             {% if tab.context_processors %}
                                 {% get_context_processor tab.context_processors as count %}
                                 {% if count > 0 %}
-                                    <span id="{{tab.context_processors}}" class="badge bg-danger rounded-pill d-flex align-items-center align-self-center mt-lg-1 mx-2 d-none d-sm-inline">
+                                    <span id="{{tab.context_processors}}" class="badge bg-warning text-dark rounded-pill d-flex align-items-center align-self-center mt-lg-1 mx-2 d-none d-sm-inline">
                                         <small>{{count}}</small>
                                     </span>
                                 {% endif %}
@@ -45,7 +63,7 @@
                         </a>
                         {% empty %}
                         <hr>
-                        <p class="px-3 d-none d-sm-inline text-muted">当前权限没有可用的导航标签</p>
+                        <p class="px-3 d-none d-sm-inline text-light">当前权限没有可用的导航标签</p>
                         <hr>
                         {% endfor %}
                     </div>

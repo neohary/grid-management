@@ -4,6 +4,7 @@
 {% load static %}
 <head>
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+    <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
 </head>
 <title>用户总览 - {{title}}</title>
 <!-- 模态框 -->
@@ -48,32 +49,33 @@
         data-pagination="true"
         data-page-size="15"
         data-page-list="[10, 15, 20, 50, 100, All]"
+        data-filter-control="true"
         >
     </table>    
 </div>
 
 <script>
-    
 
     $(document).ready(function(){
         $('#toast').toast('hide');
     })
 
-    $.ajax({
-        url:'/api/user/get_by_permission/',
-        type:'GET',
-        success:(data) => {
-            var columns = [
+    var columns = [
                 {field:'id',title:'编号',class:"id"},
                 {field:'username',title:'用户名',sortable:true,class:"username"},
                 {field:'phone',title:'手机号',sortable:true,class:"phone"},
                 {field:'email',title:'邮箱',sortable:true,class:"email"},
-                {field:'village',title:'村庄',sortable:true,class:"village"},
-                {field:'mgrid',title:'微网格',sortable:true,class:"mgrid"},
+                {field:'village',title:'村庄',sortable:true,class:"village",filterControl:'select'},
+                {field:'mgrid',title:'微网格',sortable:true,class:"mgrid",filterControl:'input'},
                 {field:'group',title:'权限',sortable:true,class:"group"},
                 {field:'last_login',title:'最后登录',sortable:true,class:"last_login"},
                 {field:'option',title:'操作',class:"option"}
             ];
+
+    $.ajax({
+        url:'/api/user/get_by_permission/',
+        type:'GET',
+        success:(data) => {
             var res_data = []
             var i = 0;
             data['users'].forEach(element => {
@@ -92,7 +94,7 @@
                 i++;
                 globalThis.global_index = i;
             });
-            console.log(res_data)
+            //console.log(res_data)
             $('#table').bootstrapTable({
                 columns: columns,
                 data:res_data,
@@ -100,12 +102,22 @@
                     
                 }
             })
+        },
+        error:(error) => {
+            $('#table').bootstrapTable({
+                columns: columns,
+                data:[],
+            })
+            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+            $('#toast .toast-body').text("数据载入异常："+error['responseJSON'].message)
+            $('#toast').toast('show');
         }
     });
 
     function optionFormatter(id,index){
         return [
-            '<div>',
+            '<div class="d-flex flex-nowarp gap-2">',
             '    <button class="btn btn-primary my-lg-0 my-1" onclick="editUserGroup('+id+')">',
             '        <i class="fa-solid fa-pen-to-square"></i> 编辑权限',
             '    </button>',
@@ -152,7 +164,7 @@
                     //console.log(error['responseJSON'])
                     $('#toast').removeClass('border-success text-success border-danger text-danger')
                         .addClass('border-danger text-danger')
-                    $('#toast .toast-body').text("操作失败："+error['responseJSON'])
+                    $('#toast .toast-body').text("操作失败："+error['responseJSON'].message)
                     $('#toast').toast('show');
                 }
             })

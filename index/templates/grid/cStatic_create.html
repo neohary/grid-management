@@ -61,7 +61,6 @@
                 <div class="col-auto needs-validation" id="form-range">
                     <label for="range" class="form-label">统计范围</label>
                     <select id="range" class="form-select">
-                        <option value="v">所属的村庄</option>
                     </select>
                     <div class="invalid-feedback"></div>
                 </div>
@@ -383,6 +382,28 @@
     }
 
     function rangeListener(){
+        $.ajax({
+            async:false,
+            url:'/api/village/',
+            type:'GET',
+            success:(data) => {
+                $('#range').empty()
+                opt = ['<option value="all">所有村庄</option>'].join('')
+                $('#range').append(opt)
+                data.forEach(element => {
+                    opt = ['<option value="'+element.id+'">'+element.name+'</option>'].join('')
+                    $('#range').append(opt)
+                });
+            },
+            error:() => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("数据载入异常")
+                $('#toast').toast('show');
+            }
+        })
+        //$('#range').trigger('change')
+
         $('#range').on('change',function(){
             if($(this).val() == ''){
                 $(this).removeClass('is-invalid')
@@ -392,6 +413,7 @@
             }else{
                 $(this).removeClass('is-invalid')
                 globalThis.range_data = $(this).val()
+                //console.log(globalThis.range_data)
             }
             
         })

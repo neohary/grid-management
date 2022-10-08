@@ -15,6 +15,8 @@ class ResidentDetailSerializer(serializers.ModelSerializer):
     house_name = serializers.SerializerMethodField('get_house_name')
     age = serializers.SerializerMethodField('get_age')
     sex_display = serializers.SerializerMethodField('get_sex_display_ser')
+    village = serializers.SerializerMethodField('get_village')
+    mgrid = serializers.SerializerMethodField('get_mgrid')
 
     def get_house_name(self,Resident):
         try:
@@ -34,6 +36,22 @@ class ResidentDetailSerializer(serializers.ModelSerializer):
             return Resident.get_sex_display()
         except:
             return ''
+    
+    def get_village(self,Resident):
+        try:
+            village = Resident.b_house.village
+        except:
+            return [None,None]
+        if village:
+            return [village.name,village.pk]
+    
+    def get_mgrid(self,Resident):
+        try:
+            mgrid = Resident.b_house.mgrid
+        except:
+            return [None,None]
+        if mgrid:
+            return [mgrid.name,mgrid.pk]
 
     class Meta:
         model = Resident

@@ -46,7 +46,7 @@ class UserSerializer(serializers.ModelSerializer):
         try:
             result = []
             for group in User.groups.all():
-                html = '<span class="badge bg-primary mx-1">{}</span>'.format(group.name)
+                html = '<span class="badge bg-danger mx-1">{}</span>'.format(group.name)
                 result.append(html)
             return result
         except:

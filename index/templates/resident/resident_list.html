@@ -5,7 +5,18 @@
 <head>
     <script src="{% static 'js/resident_list.js' %}"></script>
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+    <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
 </head>
+<style>
+    {% if not user.is_superuser %}
+    .village {
+        display: none;
+    }
+    .mgrid {
+        display: none;
+    }
+    {% endif %}
+</style>
 <title>人员总览 - {{title}}</title>
 <!-- 模态框 -->
 <div class="modal fade" id="myModal">
@@ -51,6 +62,10 @@
         data-page-size="15"
         data-page-list="[10, 15, 20, 50, 100, All]"
         data-show-footer="true"
+        data-filter-control="true"
+        data-show-search-clear-button="true"
+        data-show-columns="true"
+        data-show-columns-toggle-all="true"
         >
     </table>    
 </div>
@@ -58,6 +73,8 @@
 <script>
     var columns = [
         {field:'id',title:'编号',class:"id"},
+        {field:'village',title:'村庄',class:"village",filterControl:'select'},
+        {field:'mgrid',title:'微网格',class:"mgrid",filterControl:'input'},
         {field:'name',title:'姓名',sortable:true,class:"name"},
         {field:'sex',title:'性别',sortable:true,class:"sex"},
         {field:'age',title:'年龄',sortable:true,class:"age"},
@@ -71,7 +88,9 @@
     var res_data = []
 
     $(document).ready(function(){
+        {% if 'resident.can_c/d_resident' in perms %}
         load_Form()
+        {% endif %}
         $('#toast').toast('hide');
     })
 
@@ -85,6 +104,8 @@
                 //console.log(element)
                 res_data[i] = {
                     'id':element.id,
+                    'village':element.village[0],
+                    'mgrid':element.mgrid[0],
                     'name':element.name,
                     'sex':element.sex_display,
                     'age':element.age,
@@ -100,11 +121,30 @@
             });
         }
     });
+
+    function operaFormatter(id,index){
+        return [
+            '<div class="px-3 d-flex flex-nowarp gap-2">',
+            '    <a href="/resident/'+id+'" class="btn btn-primary mx-lg-1 my-lg-0 my-1" role="button">',
+            '        <i class="fa-solid fa-list"></i>',
+            '    </a>',
+            {% if 'resident.can_c/d_resident' in perms %}
+            '    <button class="btn btn-danger my-lg-0 mx-lg-1 my-1" onclick="confirmDelete('+id+','+index+')" id="delete" data-bs-toggle="modal" data-bs-target="#myModal">',
+            '        <i class="fa-solid fa-trash"></i>',
+            '    </button>',
+            {% endif %}
+            '</div>'
+        ].join('')
+    }
     $('#table').bootstrapTable({
         columns: columns,
         data:res_data,
         onPostBody:function(){
+            {% if 'resident.can_c/d_resident' in perms %}
             load_Form()
+            {% endif %}
+            $('button[name="clearSearch"]').text("清空")
+            $('button[aria-label="Columns"]').html(['<i class="fa-solid fa-list"></i>'].join(''))
         }
     })
     //$('#table').bootstrapTable('hideColumn','id')

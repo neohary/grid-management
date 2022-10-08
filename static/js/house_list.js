@@ -14,19 +14,6 @@ function get_bool(bool){
     return badgediv.outerHTML
 }
 
-function operaFormatter(id,index){
-    return [
-        '<div class="text-center">',
-        '    <a href="/house/'+id+'" role="button" class="btn btn-primary mx-lg-1 my-lg-0 my-1" id="info-'+id+'">',
-        '        <i class="fa-solid fa-list"></i> 查看详情',
-        '    </a>',
-        '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete-'+id+'" data-bs-toggle="modal" data-bs-target="#myModal">',
-        '        <i class="fa-solid fa-trash"></i> 删除',
-        '    </button>',
-        '</div>'
-    ].join('')
-}
-
 function confirmDelete(id,index){
     var datacol = $('tr[data-index='+ index +']');
     $('.modal-title').text("确认")

@@ -14,19 +14,6 @@ function get_bool(bool){
     return badgediv.outerHTML
 }
 
-function operaFormatter(id,index){
-    return [
-        '<div class="px-3">',
-        '    <a href="/resident/'+id+'" class="btn btn-primary mx-lg-1 my-lg-0 my-1" role="button">',
-        '        <i class="fa-solid fa-list"></i> 查看详情',
-        '    </a>',
-        '    <button class="btn btn-danger my-lg-0 mx-lg-1 my-1" onclick="confirmDelete('+id+','+index+')" id="delete" data-bs-toggle="modal" data-bs-target="#myModal">',
-        '        <i class="fa-solid fa-trash"></i> 删除',
-        '    </button>',
-        '</div>'
-    ].join('')
-}
-
 function nameFooter(){
     return [
         '<div class="form-name needs-validation">',
@@ -105,8 +92,8 @@ function houseFooter(){
         '    <input class="form-control" list="houselist" id="form-house-input" placeholder="输入户号搜索..." aria-describedby="househelp">',
         '    <datalist id="houselist"></datalist>',
         '    <div id="househelp" class="form-text">户</div>',
-        '    <div class="invalid-feedback">',
-        '    </div>',
+        '    <div class="invalid-feedback"></div>',
+        '    <div id="housename" class="text-success"></div>',
         '</div>'
     ].join('')
 }
@@ -352,12 +339,15 @@ function houseListener(){
                 url:'/api/houses/'+id+'/',
                 type:'GET',
                 success:(response) => {
+                    $('#housename').text('')
                     $('#form-house-input').removeClass('is-invalid')
+                    $('#housename').text(response.house_name)
                     globalThis.house_data = response.id
                 },
                 error:(error) => {
                     $('.form-house .invalid-feedback').text("出现错误，请核对信息或稍后再试")
                     globalThis.house_data = undefined
+                    $('#housename').text('')
                     $('#form-house-input').removeClass('is-invalid')
                         .addClass('is-invalid')
                 }

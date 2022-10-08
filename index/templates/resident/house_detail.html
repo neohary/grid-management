@@ -69,10 +69,11 @@
         <small id="sorthelp" class="form-text text-muted">留空则自动分配</small>
         
     </div>
-
+    {% if 'resident.can_edit_house' in perms %}
     <div class="py-2 d-grid">
         <button class="btn btn-success btn-lg" id="submit">更新信息</button>
     </div>
+    {% endif %}
 
     <div class="py-2">
         <label for="table">
@@ -293,6 +294,7 @@
 
     function optionFormatter(id,index){
         var optdiv = document.createElement('div')
+        {% if 'resident.can_edit_resident' in perms %}
         var btn = document.createElement('button')
         btn.classList.add('btn','btn-primary','mx-lg-1')
         btn.setAttribute('onclick',"setHolder("+ "'" + id + "','" + index +"')")
@@ -302,7 +304,10 @@
         var icon = document.createElement('i')
         icon.classList.add('fa-solid','fa-star')
         btn.appendChild(icon)
+        optdiv.appendChild(btn)
+        {% endif %}
 
+        {% if 'resident.can_c/d_resident' in perms %}
         var btn2 = document.createElement('button')
         btn2.classList.add('btn','btn-danger','mx-lg-1')
         btn2.setAttribute('onclick',"confirmDelete("+ "'" + id + "','" + index +"')")
@@ -312,9 +317,9 @@
         var icon2 = document.createElement('i')
         icon2.classList.add('fa-solid','fa-trash')
         btn2.appendChild(icon2)
-
-        optdiv.appendChild(btn)
         optdiv.appendChild(btn2)
+        {% endif %}
+        
         return [optdiv.outerHTML].join('')
     }
 
@@ -422,7 +427,9 @@
                     columns :columns,
                     data: res_data,
                     onPostBody:function(){
+                        {% if 'resident.can_c/d_resident' in perms %}
                         load_Form()
+                        {% endif %}
                     }
                 })
                 

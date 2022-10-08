@@ -82,7 +82,7 @@
 
     function load_template_data() {
         $.ajax({
-            url:'/api/stemplate/{{pk}}',
+            url:'/api/stemplate/{{pk}}/',
             type:'GET',
             success:(data) => {
                 $('.static-name-display').text(data.title)
@@ -98,6 +98,9 @@
                 }
                 globalThis.dataTypes = data.datatypes
                 globalThis.extra_columns = translateDatatypes(data.datatypes)
+                if (!data.village) {
+                    data.village = '{{user.profile.village.id}}'
+                }
                 load_object_by_range(data.obj,data.range,data.village,data.mgrid,data.datatypes)
             }
         })
@@ -115,7 +118,7 @@
                 {field:'sex',title:'性别',sortable:true,class:"sex"},
                 {field:'age',title:'年龄',sortable:true,class:"age"}
             ]
-            if(range == 'v'){
+            if((range == 'v') || (range == 'a')){
                 url = '/api/village/' + village + '/get_residents/'
             }else if(range == 'g'){
                 url = '/api/mgrid/' + mgrid + '/get_residents/'
@@ -128,7 +131,7 @@
                 {field:'population',title:'人口',sortable:true,class:"population"},
                 {field:'holder_name',title:'户主',sortable:true,class:"holder_name"}
             ]
-            if(range == 'v'){
+            if((range == 'v') || (range == 'a')){
                 url = '/api/village/'+ village + '/get_houses/'
             }else if(range == 'g'){
                 url = '/api/mgrid/'+ mgrid + '/get_houses/'
@@ -142,7 +145,7 @@
                 {field:'houses_count',title:'户数',sortable:true,class:"houses"},
                 {field:'pop_count',title:'人口',sortable:true,class:"pop"}
             ]
-            if(range == 'v'){
+            if((range == 'v') || (range == 'a')){
                 url = '/api/village/' + village + '/get_mgrids/'
             }else if(range == 'g'){
                 url = '/api/mgrid/'+mgrid+'/'
@@ -182,8 +185,6 @@
                         load_table_data()   
                     }
                 })
-                //开发一个api，get到所有已经存在统计实例的object，将数据load到table中（已完成，前端待实现）
-                //追加两个列：创建者和创建时间
             }
         })
     }

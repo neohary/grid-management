@@ -379,7 +379,7 @@ class sTemplateViewSet(viewsets.ViewSet):
     def retrieve(self,request,pk):
         if request.user.has_perm('grid.can_see_stemplate'):
             obj = get_object_or_404(CustomStaticsTemplate,pk=pk)
-            if obj.village == request.user.profile.village:
+            if obj.village == request.user.profile.village or obj.range == 'a':
                 if obj.deleted == False:
                     serializer = CustomStaticsTemplateDetailSerializer(obj)
                 else:
@@ -390,10 +390,12 @@ class sTemplateViewSet(viewsets.ViewSet):
     def create(self,request):
         if request.user.has_perm('grid.can_cd_stemplate'):
             request.data['creater'] = request.user.pk
-            if request.data['range'] == 'v':
-                request.data['village'] = request.user.profile.village.id
-            elif request.data['range'] == 'g':
-                request.data['mgrid'] = request.user.profile.mgrid.id
+            if request.data['range'] != 'all':
+                print(request.data['range'])
+                request.data['village'] = get_object_or_404(Village,pk=request.data['range'])
+                request.data['range'] = 'v'
+            elif request.data['range'] == 'all':
+                request.data['range'] = 'a'
             
             serializer = CustomStaticsTemplateDetailSerializer(data=request.data)
             if serializer.is_valid():
@@ -432,11 +434,11 @@ class sTemplateViewSet(viewsets.ViewSet):
             sTemplate = CustomStaticsTemplate.objects.all().exclude(deleted=True)
         elif request.user.has_perms(['grid.village_mark_stemplate','grid.can_see_stemplate']):
             t_village = request.user.profile.village
-            sTemplate = CustomStaticsTemplate.objects.filter(village=t_village).exclude(deleted=True)
+            sTemplate = CustomStaticsTemplate.objects.filter(Q(village=t_village) | Q(range='a') ).exclude(deleted=True)
         elif request.user.has_perms(['grid.mgrid_mark_stemplate','grid.can_see_stemplate']):
             t_village = request.user.profile.village
             #t_mgrid = request.user.profile.mgrid
-            sTemplate = CustomStaticsTemplate.objects.filter(village=t_village).exclude(deleted=True)
+            sTemplate = CustomStaticsTemplate.objects.filter(Q(village=t_village) | Q(range='a')).exclude(deleted=True)
         
         s_sTemplate = CustomStaticsTemplateDetailSerializer(sTemplate,many=True)
         return Response({"sTemplate":s_sTemplate.data},status=status.HTTP_200_OK)

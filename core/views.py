@@ -50,6 +50,8 @@ class UserViewSet(viewsets.ViewSet):
         elif request.user.has_perms(['grid.can_see_user','grid.mgrid_mark_user']):
             t_mgrid = request.user.profile.mgrid
             queryset = User.objects.filter(profile__mgrid=t_mgrid)
+        else:
+            return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
         serializer = UserSerializer(queryset,many=True)
         return Response({'users':serializer.data},status=status.HTTP_200_OK)
     
@@ -57,8 +59,8 @@ class UserViewSet(viewsets.ViewSet):
     def kick(self,request,pk):
         if request.user.has_perm('grid.can_edit_user'):
             obj = get_object_or_404(User,pk=pk)
-            if obj == request.user:
-                return Response({'message':'你不能移除自己，如果需要移除自己，请联系管理员'},status=status.HTTP_400_BAD_REQUEST)
+            if obj == request.user or (obj.is_superuser and request.user != obj) or obj.groups.filter(name="村管理员").exists():
+                return Response({'message':'无法移除村管理员、网站管理员和自己，如果需要移除请联系网站管理员'},status=status.HTTP_400_BAD_REQUEST)
             obj.groups.clear()
             group = Group.objects.filter(name="未授权").get()
             obj.groups.add(group)

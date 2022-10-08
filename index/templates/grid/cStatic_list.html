@@ -4,6 +4,7 @@
 {% load static %}
 <head>
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
+    <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
 </head>
 <title>统计总览 - {{title}}</title>
 <!-- 信息框 -->
@@ -45,10 +46,13 @@
         data-locale="zh-CN"
         data-toggle="table"
         data-sortable="true"
+        data-sort-name="create_date"
+        data-sort-order="desc"
         data-search="true"
         data-pagination="true"
         data-page-size="15"
         data-page-list="[10, 15, 20, 50, 100, All]"
+        data-filter-control="true"
         >
 
     </table>
@@ -66,7 +70,7 @@
     var columns = [
         {field:'id',title:'编号',class:"id"},
         {field:'title',title:'标题',sortable:true,class:"title"},
-        {field:'range_display',title:'范围',sortable:true,class:"range"},
+        {field:'range_display',title:'范围',sortable:true,class:"range",filterControl:'select'},
         {field:'object_display',title:'对象',sortable:true,class:"object"},
         {field:'creater_display',title:'创建者',sortable:true,class:"creater"},
         {field:'create_date',title:'创建日期',sortable:true,class:"create_date"},
@@ -123,9 +127,11 @@
             '    <a href="/statistics/'+id+'" class="btn btn-primary mx-lg-1 my-lg-0 my-1" role="button">',
             '        <i class="fa-solid fa-list"></i> 查看详情',
             '    </a>',
+            {% if 'grid.can_cd_stemplate' in perms %}
             '    <button class="btn btn-danger mx-lg-1 my-lg-0 my-1" onclick="confirmDelete('+id+','+index+')" id="delete" data-bs-toggle="modal" data-bs-target="#myModal">',
             '        <i class="fa-solid fa-trash"></i> 删除',
             '    </button>',
+            {% endif %}
             '</div>'
         ].join('')
     }
@@ -170,7 +176,7 @@
 
     $('#table').bootstrapTable({
         columns: columns,
-        data: stc_data
+        data: stc_data,
     })
 
 </script>

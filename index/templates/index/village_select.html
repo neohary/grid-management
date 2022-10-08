@@ -46,7 +46,7 @@
 </div>
 
 <div class="py-3 px-lg-5">
-    <p>欢迎使用网格化管理系统</p>
+    <p>欢迎使用{{title}}</p>
     <h2>选择所属村庄</h2>
 </div>
 
@@ -55,16 +55,16 @@
         <div class="h4">你有一条已提交的申请</div>
         <input type="hidden" id="approval_id" value="">
         <div class="h4 village_display text-center">xx村</div>
-        <span>状态：待审批</span>
         <div class="d-grid">
-            <button class="btn btn-danger" onclick="confirmCancel()" data-bs-toggle="modal" data-bs-target="#myModal">撤销申请</button>
+            <span class="my-2 p-2 badge bg-warning text-dark">状态：待审批</span>
+            <button class="btn btn-danger btn-sm" onclick="confirmCancel()" data-bs-toggle="modal" data-bs-target="#myModal">撤销申请</button>
         </div>
     </div>
 </div>
 
 <div class="px-lg-5 row d-flex justify-content-center village-container">
     <div id="village-id" class="col-3 m-3 p-3 rounded border btn btn-primary shadow-sm" role="button">
-        <p class="h2 px-3 name">xx村</p>
+        <p class="h2 px-3 name text-danger">xx村</p>
         <p class="h4 pt-1 px-5 d-flex justify-content-between">
             <span data-bs-toggle="tooltip" title="微网格" class="px-1">
                 <i class="fa-solid fa-border-all"></i>
@@ -120,22 +120,22 @@
     function create_cell(data) {
         return [
            ' <div id="village-'+ data.id +'" class="col-lg-3 col-6 m-3 p-3 rounded border btn btn-primary shadow-sm" role="button" onclick="confirmApply('+ data.id +')" data-bs-toggle="modal" data-bs-target="#myModal">',
-           '     <div class="h2 px-lg-3 name">'+ data.name +'</div>',
+           '     <div class="h3 px-lg-3 name text-danger">'+ data.name +'</div>',
            '     <div class="h4 pt-1 px-lg-4 d-flex justify-content-between">',
            '         <div data-bs-toggle="tooltip" title="微网格" class="px-1 text-center">',
-           '             <i class="fa-solid fa-border-all"></i>',
+           '             <i class="fa-solid fa-border-all text-muted"></i>',
            '             <span class="mgrid_count">'+ data.mgrid_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="住户" class="px-1 text-center">',
-           '             <i class="fa-solid fa-house"></i>',
+           '             <i class="fa-solid fa-house text-muted"></i>',
            '             <span class="house_count">'+ data.houses_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="人口" class="px-1 text-center">',
-           '             <i class="fa-solid fa-user"></i>',
+           '             <i class="fa-solid fa-user text-muted"></i>',
            '             <span class="resident_count">'+ data.pop_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="管理人员" class="px-1 text-center">',
-           '             <i class="fa-solid fa-circle-user"></i>',
+           '             <i class="fa-solid fa-circle-user text-muted"></i>',
            '             <span class="user_count">'+ data.user_count +'</span>',
            '         </div>',
            '     </div>',

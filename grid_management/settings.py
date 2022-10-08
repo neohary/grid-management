@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-wb*8adc^8@m0-@9=-gm!-jlq92fz52(xsa#v8drotbize*@&63
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['fierce-earth-92280.herokuapp.com','127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 '''LOGGING = {
     'version': 1,
@@ -113,6 +113,7 @@ TEMPLATES = [
                 'core.context_processors.get_live_user_approval_count',
                 'core.context_processors.get_map_key',
                 'core.context_processors.get_map_style_id',
+                'core.context_processors.get_live_static_count',
             ],
         },
     },
@@ -124,13 +125,8 @@ DJANGO_NOTIFICATIONS_CONFIG = { 'SOFT_DELETE': True}
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-import dj_database_url
+
 DATABASES = {
-    'default': dj_database_url.config(default="postgres://hpfcszkxsihiom:794c0dd0e9de2c242fa401f5f3024e594144892c2a064ebb4dfee073a8cf240e@ec2-44-207-253-50.compute-1.amazonaws.com:5432/dbbd571lbsf9qd")
-    }
-
-
-'''DATABASES = {
     #'default': {
     #    'ENGINE': 'django.db.backends.sqlite3',
     #    'NAME': BASE_DIR / 'db.sqlite3',
@@ -144,7 +140,7 @@ DATABASES = {
     'HOST': 'localhost',
     'PORT': '5432',
     }
-}'''
+}
 
 
 # Password validation

@@ -61,10 +61,11 @@
         </div>
     </div>
 </div>
-
+{% if 'grid.can_c/d_mgrid' in perms %}
 <div class="px-lg-5 py-2 d-grid">
     <button class="btn btn-success btn-lg" id="submit">更新信息</button>
 </div>
+{% endif %}
 
 
 <script>

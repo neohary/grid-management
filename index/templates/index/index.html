@@ -57,8 +57,8 @@
     <div class="d-flex" style="flex-wrap:wrap !important;">
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">村庄</div>
-                <div class="h5"><strong id="village-name">xxx</strong></div>
+                <div class="h5 text-danger">村庄</div>
+                <div class="h5"><strong id="village-name">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-house-chimney fa-2xl"></i>
@@ -66,8 +66,8 @@
         </div>
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">人口</div>
-                <div class="h5"><strong id="resident-count">999</strong></div>
+                <div class="h5 text-danger">人口</div>
+                <div class="h5"><strong id="resident-count">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-user fa-2xl"></i>
@@ -75,8 +75,8 @@
         </div>
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">住户</div>
-                <div class="h5"><strong id="house-count">999</strong></div>
+                <div class="h5 text-danger">住户</div>
+                <div class="h5"><strong id="house-count">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-house fa-2xl"></i>
@@ -84,8 +84,8 @@
         </div>
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">微网格</div>
-                <div class="h5"><strong id="mgrid-count">999</strong></div>
+                <div class="h5 text-danger">微网格</div>
+                <div class="h5"><strong id="mgrid-count">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-border-all fa-2xl"></i>
@@ -93,8 +93,8 @@
         </div>
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">用户</div>
-                <div class="h5"><strong id="user-count">999</strong></div>
+                <div class="h5 text-danger">用户</div>
+                <div class="h5"><strong id="user-count">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-circle-user fa-2xl"></i>
@@ -105,8 +105,8 @@
     <div class="d-flex" style="flex-wrap:wrap !important;">
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">用户名</div>
-                <div class="h5"><strong id="username">xxx</strong></div>
+                <div class="h5 text-danger">用户名</div>
+                <div class="h5"><strong id="username">loading</strong></div>
             </div>
             <div class="ml-3 text-muted px-3">
                 <i class="fa-solid fa-circle-user fa-2xl"></i>
@@ -114,7 +114,7 @@
         </div>
         <div class="p-3 m-3 border shadow-sm card d-flex flex-row align-items-center justify-content-between">
             <div class="flex-row pt-2 px-2">
-                <div class="h5 text-primary">我的权限</div>
+                <div class="h5 text-danger">我的权限</div>
                 <div class="h5" id="group-display"></div>
             </div>
             <div class="ml-3 text-muted px-3">
@@ -200,22 +200,22 @@
     function create_cell(data) {
         return [
            ' <div id="village-'+ data.id +'" class="col-lg-3 col-6 m-3 p-3 rounded border card shadow-sm">',
-           '     <div class="h3 px-lg-3 pt-2 name">'+ data.name +'</div>',
+           '     <div class="h3 px-lg-3 pt-2 name text-danger">'+ data.name +'</div>',
            '     <div class="h4 pt-1 px-lg-4 d-flex justify-content-between">',
            '         <div data-bs-toggle="tooltip" title="微网格" class="px-1 text-center">',
-           '             <i class="fa-solid fa-border-all"></i>',
+           '             <i class="fa-solid fa-border-all text-muted"></i>',
            '             <span class="mgrid_count">'+ data.mgrid_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="住户" class="px-1 text-center">',
-           '             <i class="fa-solid fa-house"></i>',
+           '             <i class="fa-solid fa-house text-muted"></i>',
            '             <span class="house_count">'+ data.houses_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="人口" class="px-1 text-center">',
-           '             <i class="fa-solid fa-user"></i>',
+           '             <i class="fa-solid fa-user text-muted"></i>',
            '             <span class="resident_count">'+ data.pop_count +'</span>',
            '         </div>',
            '         <div data-bs-toggle="tooltip" title="管理人员" class="px-1 text-center">',
-           '             <i class="fa-solid fa-circle-user"></i>',
+           '             <i class="fa-solid fa-circle-user text-muted"></i>',
            '             <span class="user_count">'+ data.user_count +'</span>',
            '         </div>',
            '     </div>',
