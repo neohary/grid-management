@@ -136,6 +136,7 @@
         titleListener()
         $('#form-object #object').trigger('change')
         rangeListener()
+        $('#range').trigger('change')
     })
 
     function submitListener(){
@@ -166,6 +167,10 @@
                 }
             })
         }else{
+            console.log(title_data)
+            console.log(range_data)
+            console.log(object_data)
+            console.log(datatypes_data)
             //信息框弹窗提示
         }
     }

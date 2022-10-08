@@ -88,10 +88,10 @@
 <script>
     $(document).ready(function(){
         //$('#toast').toast('hide');
-        load_form()
+        load_data()
         resetGlobalParams()
     })
-    function load_form(){
+    function load_data(){
         load_village()
         load_house_data()
         load_resident_table()
@@ -420,9 +420,12 @@
                 });
                 $('#table').bootstrapTable({
                     columns :columns,
-                    data: res_data
+                    data: res_data,
+                    onPostBody:function(){
+                        load_Form()
+                    }
                 })
-                load_Form()
+                
                 $('[data-toggle="tooltip"]').tooltip()
             }
         })
@@ -701,7 +704,7 @@
                             $('#toast').toast('show');
                         },
                         error:(error) => {
-                            //console.log(error['responseJSON'])
+                            console.log(error)
                             $('#toast').removeClass('border-success text-success border-danger text-danger')
                                 .addClass('border-danger text-danger')
                             $('#toast .toast-body').text("添加失败："+error.responseJSON.message)
