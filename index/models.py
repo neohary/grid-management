@@ -1,6 +1,3 @@
-from multiprocessing import context
-from turtle import title
-from django.db import models
 from resident.models import *
 from grid.models import *
 from django.contrib.auth.models import User
