@@ -126,7 +126,12 @@ DJANGO_NOTIFICATIONS_CONFIG = { 'SOFT_DELETE': True}
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+import dj_database_url
 DATABASES = {
+    'default': dj_database_url.config(default="postgres://hpfcszkxsihiom:794c0dd0e9de2c242fa401f5f3024e594144892c2a064ebb4dfee073a8cf240e@ec2-44-207-253-50.compute-1.amazonaws.com:5432/dbbd571lbsf9qd")
+    }
+
+'''DATABASES = {
     #'default': {
     #    'ENGINE': 'django.db.backends.sqlite3',
     #    'NAME': BASE_DIR / 'db.sqlite3',
@@ -140,7 +145,7 @@ DATABASES = {
     'HOST': 'localhost',
     'PORT': '5432',
     }
-}
+}'''
 
 
 # Password validation
