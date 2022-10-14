@@ -391,7 +391,7 @@ class sTemplateViewSet(viewsets.ViewSet):
         if request.user.has_perm('grid.can_cd_stemplate'):
             request.data['creater'] = request.user.pk
             if request.data['range'] != 'all':
-                print(request.data['range'])
+                #print(request.data['range'])
                 request.data['village'] = get_object_or_404(Village,pk=request.data['range'])
                 request.data['range'] = 'v'
             elif request.data['range'] == 'all':
@@ -399,6 +399,8 @@ class sTemplateViewSet(viewsets.ViewSet):
             
             serializer = CustomStaticsTemplateDetailSerializer(data=request.data)
             if serializer.is_valid():
+                if CustomStaticsTemplate.objects.filter(title=request.data['title']).exclude(deleted=True).exists():
+                    return Response({'message':'标题重复，请更改标题重试'},status=status.HTTP_400_BAD_REQUEST)
                 serializer.save()
                 obj = CustomStaticsTemplate.objects.get(pk=serializer.data['id'])
                 customstaticstemplate_changelog(
@@ -407,8 +409,12 @@ class sTemplateViewSet(viewsets.ViewSet):
                     'c',
                     request.user
                 )
+                if obj.range == 'v' or obj.range == 'g':
+                    recipient = obj.village.get_users()
+                elif obj.range == 'a':
+                    recipient = User.objects.all()
+                notify.send(sender=request.user,recipient=recipient,verb="{} 创建了统计 {}".format(request.user,obj))
                 return Response(serializer.data)
-                notify.send(sender=request.user,recipient=obj.village.get_users(),verb="{} 创建了统计 {}".format(request.user,obj))
             else:
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
@@ -424,7 +430,11 @@ class sTemplateViewSet(viewsets.ViewSet):
                     'd',
                     request.user
                 )
-                notify.send(sender=request.user,recipient=obj.village.get_users(),verb="{} 删除了统计 {}".format(request.user,obj))
+                if obj.range == 'v' or obj.range == 'g':
+                    recipient = obj.village.get_users()
+                elif obj.range == 'a':
+                    recipient = User.objects.all()
+                notify.send(sender=request.user,recipient=recipient,verb="{} 删除了统计 {}".format(request.user,obj))
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
@@ -440,8 +450,11 @@ class sTemplateViewSet(viewsets.ViewSet):
             #t_mgrid = request.user.profile.mgrid
             sTemplate = CustomStaticsTemplate.objects.filter(Q(village=t_village) | Q(range='a')).exclude(deleted=True)
         
-        s_sTemplate = CustomStaticsTemplateDetailSerializer(sTemplate,many=True)
-        return Response({"sTemplate":s_sTemplate.data},status=status.HTTP_200_OK)
+        if sTemplate:
+            s_sTemplate = CustomStaticsTemplateDetailSerializer(sTemplate,many=True)
+            return Response({"sTemplate":s_sTemplate.data},status=status.HTTP_200_OK)
+        else:
+            return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
     @action(detail=True,methods=['get'])
     def get_instances(self,request,pk):
@@ -498,6 +511,16 @@ class sInstanceViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 serializer.save()
                 obj = CustomStaticsInstance.objects.get(pk=serializer.data['id'])
+                if obj.template.obj == 'r':
+                    temp = CustomStaticsInstance.objects.filter(Q(resident=obj.resident) & Q(template=obj.template))
+                elif obj.template.obj == 'h':
+                    temp = CustomStaticsInstance.objects.filter(Q(house=obj.house) & Q(template=obj.template))
+                if temp:
+                    if temp.count() > 1:
+                        e_temp = temp.exclude(pk=obj.pk)
+                        #print("current obj: {}".format(obj.pk))
+                        for t in e_temp:
+                            t.delete()
                 customstaticsinstance_changelog(
                     obj,
                     '{} 创建了 {}'.format(request.user,obj),

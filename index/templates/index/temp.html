@@ -1,40 +1,9 @@
+
+
 <!-- 
-    接下来要做的
-    地图视图中，根据房屋overlay显示网格势力图
-    修改map视图的代码使其接受房屋的urlconfig
-    用户管理功能 用户组权限
-    账号注册和登录
+   批量添加人员信息页面
+      一个上传文件的表单，限制格式为excel，限制大小
+      上传后点击提交 后端可以读取上传的文件内容，进行处理
+      上传表单：bootstrap
+      后端文件分析：pandas
  -->
-
- <!-- 
-   引入通知系统
-   适配通知系统
-   适配权限
-  -->
-
-  <!-- 
-      注册村庄功能
-      网站管理员才能注册村庄
-      地图上搜索村庄 选择注册 获取村庄中心点的坐标
-   -->
-
-   <!-- 
-      用户个人信息页面
-      村庄首页视图
-      更改用户权限页面 加入修改用户所属网格功能
-    -->
-
-<div>
-   <div class="mb-3">
-      <label for="locname" class="form-label">地名</label>
-      <input type="text" class="form-control" id="locname">
-   </div>
-   <div class="mb-3 row">
-      <label for="" class="form-label">坐标</label>
-      <input type="text" class="form-control" id="locX">
-      <input type="text" class="form-control" id="locY">
-   </div>
-   <div class="mb-3">
-      <button class="btn btn-success" id="createvillage">注册村庄</button>
-   </div>
-</div>

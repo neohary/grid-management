@@ -43,8 +43,15 @@ urlpatterns = [
 
 urlpatterns += [
     path('inbox/notifications/',include(notifications.urls),name='notifications'),
-    path('notify/test/',views.NotifyTest,name='nofity-test'),
+    #path('notify/test/',views.NotifyTest,name='nofity-test'),
     path('notify/list/',views.NoticeListView.as_view(),name='notify-list-html'),
     path('notify/mark-all-as-read/',views.notify_mark_all_as_read,name='notify-mark-all-as-read'),
     path('notify/delete-all-read/',views.notify_delete_all_read,name='notify-delete-all-read'),
+]
+
+from resident.views import batch_add_residents_by_file
+
+urlpatterns += [
+    path('residents/test/',views.resident_test,name='residents-test-1000'),
+    path('residents/batch_add/',batch_add_residents_by_file,name='batch-add-residents-html')
 ]

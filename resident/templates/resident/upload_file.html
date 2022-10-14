@@ -1,0 +1,116 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% load static %}
+<title>上传文件 - {{title}}</title>
+
+<div class="py-3 px-lg-5">
+    <h2>批量添加人员信息</h2>
+    <p>说明文字</p>
+</div>
+
+<div class="px-lg-5" id="formbody">
+    <div class="row">
+        <div class="mb-3 col-12 col-lg-6 col-md-6">
+            <label for="village">选择村庄：</label>
+            <select name="village" id="village" class="form-select"></select>
+        </div>
+        <div class="mb-3 col-12 col-lg-6 col-md-6">
+            <label for="mgrid">选择微网格：</label>
+            <select name="mgrid" id="mgrid" class="form-select"></select>
+        </div>
+    </div>
+    <form action="{% url 'batch-add-residents-html' %}" class="d-grid" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{form}}
+        <div class="text-danger" id="sizewarning">上传的文件不能超过10MB</div>
+        <input type="submit" class="btn btn-primary mt-3" value="提交" id="submit" disabled="true">
+    </form>
+</div>
+<div class="px-lg-5 p-5 m-5 d-flex justify-content-center align-items-center" id="loading">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <span class="px-3">处理中……</span>
+</div>
+<!-- 
+    限制文件体积
+    点击提交后，隐藏表单，显示loading动画直到跳转到结果页面
+    结果页面增加刷新按钮
+    操作成功后发送通知
+ -->
+<script>
+    $(document).ready(function() {
+        load_select()
+        $('#sizewarning').hide()
+        $('#loading').removeClass('d-flex')
+        $('#loading').hide()
+    })
+
+    function load_select() {
+        $.ajax({
+            url:'/api/village/get_by_permission/',
+            type:'GET',
+            success:(data) => {
+                $('#village').empty()
+                data['villages'].forEach(element => {
+                    var option = ['<option value="'+element.id+'">'+element.name+'</option>'].join('')
+                    $('#village').append(option)
+                });
+                $('#village').trigger('change')
+            }
+        })
+    }
+
+    $('#submit').on('click',function(){
+        $('#formbody').hide()
+        $('#loading').addClass('d-flex')
+        $('#loading').show()
+    })
+
+    $('#id_file').on('change',function(e){
+        var maxSize = 10 //MB
+        var files = e.currentTarget.files; // puts all files into an array
+        console.log(files.length)
+        if(files.length > 0){
+            var filesize = ((files[0].size/1024)/1024).toFixed(4); // MB
+            console.log(filesize)
+            if(filesize > maxSize){
+                $('#sizewarning').show()
+                $('#submit').attr('disabled',true)
+            }else{
+                $('#sizewarning').hide()
+                $('#submit').attr('disabled',false)
+            }
+        }else{
+            $('#sizewarning').hide()
+            $('#submit').attr('disabled',true)
+        }
+    })
+
+    $('#village').on('change',function(){
+        $('#id_mgrid_pk').val('')
+        $('#id_sheet_name').val('')
+        $.ajax({
+            url:'/api/village/'+$(this).val()+'/get_mgrids/',
+            type:'GET',
+            success:(data) => {
+                $('#mgrid').empty()
+                data['mgrids'].forEach(element => {
+                    var option = ['<option value="'+element.id+'">'+element.name+'</option>'].join('')
+                    $('#mgrid').append(option)
+                    $('#mgrid').trigger('change')
+                });
+            }
+        })
+    })
+
+    $('#mgrid').on('change',function(){
+        if($(this).val() != ''){
+            $('#id_mgrid_pk').val($(this).val())
+            $('#id_sheet_name').val($(this).find('option:selected').text())
+        }
+    })
+</script>
+
+
+{% endblock %}

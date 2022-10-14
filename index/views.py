@@ -243,3 +243,36 @@ def village_detail(request,pk):
 def not_found_view(request):
     
     return render(request,'index/404.html')
+
+from resident.models import Resident,House
+import random
+
+def resident_test(request):
+    for i in range(1000):
+        name = ''
+        for j in range(3):
+            name += random.choice('阙凡旋耿冰枫蒙娟妍冀秋翠范孤丹敖翠茵充清浅')
+        age = random.randint(10,100)
+        sex = random.choice('mf')
+        phone = random.randint(10000000000,99999999999)
+        r_bool = bool(random.getrandbits(1))
+        houses = list(House.objects.all().exclude(deleted=True))
+        house = random.choice(houses)
+        outLocation = ''
+        if not r_bool:
+            for j in range(random.randint(2,6)):
+                outLocation += random.choice('盯卵道孕哲省堂睁镇二往坝北颤庄秀圈堡易银观')
+        else:
+            outLocation = None
+        note = 'TEST'
+        Resident.objects.create(
+            name=name,
+            r_age=age,
+            sex=sex,
+            phone=phone,
+            isLocalResident=r_bool,
+            outLocation=outLocation,
+            note=note,
+            b_house=house
+        )
+    return render(request,'index/test_complete.html')

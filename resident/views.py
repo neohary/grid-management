@@ -16,6 +16,7 @@ from django.core import serializers as JSserializers
 from index.models import ResidentChangeLog,HouseChangeLog
 
 from notifications.signals import notify
+from django.db import transaction
 
 def is_ajax(request):
     return request.headers.get('x-requested-with') == 'XMLHttpRequest'
@@ -174,6 +175,7 @@ class ResidentViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    #@transaction.atomic
     @action(detail=False,methods=['get'])
     def get_by_permission(self,request):
         if request.user.is_superuser:
@@ -266,7 +268,6 @@ class HouseViewSet(viewsets.ViewSet):
                 if residents:
                     for resident in residents:
                         resident.delete()
-                        #resident.save()
 
                 house_changelog(
                     house,
@@ -362,3 +363,143 @@ class HouseViewSet(viewsets.ViewSet):
             else:
                 return Response({'error':"指定的人员不存在"},status=status.HTTP_404_NOT_FOUND)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
+
+from django.shortcuts import render
+from .forms import UploadFileForm
+import pandas as pd
+from django.core.exceptions import PermissionDenied
+
+def translateSex(text):
+    if text == '男':
+        return 'm'
+    else:
+        return 'f'
+
+def translateIsLocal(text):
+    if text == '常住':
+        return True
+    else:
+        return False
+
+@transaction.atomic
+def batch_add_residents_by_file(request):
+    if request.user.is_superuser:
+        if request.method == 'POST':
+            form = UploadFileForm(request.POST,request.FILES)
+            if form.is_valid():
+                mgrid = get_object_or_404(MicroGrid,pk=request.POST['mgrid_pk'])
+                df = pd.ExcelFile(request.FILES['file']).parse(request.POST['sheet_name'])
+                houses = House.objects.filter(mgrid=mgrid).exclude(deleted=True)
+                house = None
+                i = 0
+                messages = []
+                resident_count = 0
+                house_count = 0
+                empty_house_count = 0
+                for index,row in df.iterrows():
+                    if not pd.isnull(row[0]):
+                        if isinstance(row[0],int):
+                            '''
+                            try:
+                                house = houses.filter(mgridID=row[0]).get()
+                            except House.DoesNotExist:
+                                messages.append("[放弃] 处理失败，{} 第 {} 户不存在，请手动创建该微网格中的所有住户信息后再试。".format(mgrid.name,row[0]))
+                                return render(request,'resident/upload_result.html',{'messages':messages})
+                            '''
+                            house = row[0]#FAKE
+                            messages.append("[FAKE] 假装更新了house为第 {} 户".format(house))#FAKE
+                            house_count += 1
+
+                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
+                            if obj:
+                                obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
+                                #obj.b_house = house
+                                #obj.isholder = True
+                                #obj.save()
+                                #messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
+                                messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house))#FAKE
+                                resident_count += 1
+                            else:
+                                if pd.isnull(row[2]) & bool(row[8] == "空户"):
+                                    messages.append('[提示] 第 {} 户为空户，不做任何操作'.format(row[0],house))
+                                    empty_house_count += 1
+                                else:
+                                    '''
+                                    Resident.objects.create(
+                                        name=row[2],
+                                        r_age=row[3],
+                                        sex=translateSex(row[4]),
+                                        phone=row[5],
+                                        isLocalResident=translateIsLocal(row[6]),
+                                        outLocation=row[7],
+                                        note=row[8],
+                                        b_house=house,
+                                        isholder=True
+                                    )
+                                    '''
+                                    resident_count += 1
+                                    resident = Resident(
+                                        name=row[2],
+                                        r_age=row[3],
+                                        sex=translateSex(row[4]),
+                                        phone=row[5],
+                                        isLocalResident=translateIsLocal(row[6]),
+                                        outLocation=row[7],
+                                        note=row[8],
+                                        isholder=True
+                                    )#FAKE
+                                    #messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
+                                    messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(resident,house))#FAKE
+                        else:
+                            if row[0] == '合计':
+                                messages.append('[完成] 结束处理')
+                                #加入一些统计，添加了多少人，影响了多少户，多少户为空户
+                                context = {}
+                                
+                                return render(request,'resident/upload_result.html',
+                                    {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
+                            messages.append('[其他] 跳过第 {} 行'.format(i))
+                    else:
+                        obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
+                        if obj:
+                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
+                            #obj.b_house = house
+                            #obj.isholder = False
+                            #obj.save()
+                            messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户'.format(row[2],house.mgridID))
+                            resident_count += 1
+                        else:
+                            '''
+                            Resident.objects.create(
+                                name=row[2],
+                                r_age=row[3],
+                                sex=translateSex(row[4]),
+                                phone=row[5],
+                                isLocalResident=translateIsLocal(row[6]),
+                                outLocation=row[7],
+                                note=row[8],
+                                b_house=house,
+                                isholder=False
+                            )
+                            '''
+                            resident_count += 1
+                            resident = Resident(
+                                name=row[2],
+                                r_age=row[3],
+                                sex=translateSex(row[4]),
+                                phone=row[5],
+                                isLocalResident=translateIsLocal(row[6]),
+                                outLocation=row[7],
+                                note=row[8],
+                                isholder=False
+                            )#FAKE
+                            #messages.append('[创建] 添加 {} 到第 {} 户'.format(row[2],house.mgridID))
+                            messages.append('[创建] 添加 {} 到第 {} 户'.format(resident,house)) #FAKE
+                    i += 1
+                return render(request,'resident/upload_result.html',{'messages':messages})
+        else:
+            form = UploadFileForm()
+        
+        return render(request,'resident/upload_file.html',{'form':form})
+    else:
+        raise PermissionDenied()

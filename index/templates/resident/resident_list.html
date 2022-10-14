@@ -6,6 +6,9 @@
     <script src="{% static 'js/resident_list.js' %}"></script>
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
     <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
+    <script src="{% static 'js/xlsx.core.min.js' %}"></script>
+    <script src="{% static 'js/bootstrap-table-export.min.js' %}"></script>
+    <script src="{% static 'js/tableExport.min.js' %}"></script>
 </head>
 <style>
     {% if not user.is_superuser %}
@@ -49,12 +52,24 @@
 </div>
 
 <div class="py-3 px-lg-5">
-    <h2>人员总览</h2>
+    <h2>
+        人员总览
+        {% if user.is_superuser %}
+        <a href="{% url 'batch-add-residents-html' %}" class="btn btn-primary">批量添加人员信息</a>
+        {% endif %}
+    </h2>
 </div>
 
 <div class="px-lg-5">
+    <div class="d-flex justify-content-center border rounded p-5" id="loading">
+        <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p class="h3 px-3 align-self-center">加载数据中，请稍后……</p>
+    </div>
     <table id="table"
         data-locale="zh-CN"
+        data-show-export="true"
         data-toggle="table"
         data-sortable="true"
         data-search="true"
@@ -71,20 +86,27 @@
 </div>
 
 <script>
+    //window.jsPDF = window.jspdf.jsPDF
     var columns = [
-        {field:'id',title:'编号',class:"id"},
-        {field:'village',title:'村庄',class:"village",filterControl:'select'},
-        {field:'mgrid',title:'微网格',class:"mgrid",filterControl:'input'},
-        {field:'name',title:'姓名',sortable:true,class:"name"},
-        {field:'sex',title:'性别',sortable:true,class:"sex"},
-        {field:'age',title:'年龄',sortable:true,class:"age"},
-        {field:'phone',title:'电话',sortable:true,class:"phone"},
-        {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident"},
-        {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation"},
-        {field:'b_house',title:'户',sortable:true,class:"b_house"},
-        {field:'note',title:'备注',sortable:true,class:"note"},
-        {field:'option',title:'操作',class:"option"}
+        [
+            {title: '基本信息',colspan: 12,align: 'center'}
+        ],
+        [
+            {field:'id',title:'编号',class:"id-x"},
+            {field:'village',title:'村庄',class:"village",filterControl:'select'},
+            {field:'mgrid',title:'微网格',class:"mgrid",filterControl:'input'},
+            {field:'name',title:'姓名',sortable:true,class:"name",filterControl:'input'},
+            {field:'sex',title:'性别',sortable:true,class:"sex",filterControl:'select'},
+            {field:'age',title:'年龄',sortable:true,class:"age",filterControl:'input'},
+            {field:'phone',title:'电话',sortable:true,class:"phone",filterControl:'input'},
+            {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident",filterControl:'select'},
+            {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation",filterControl:'input'},
+            {field:'b_house',title:'户',sortable:true,class:"b_house",filterControl:'input'},
+            {field:'note',title:'备注',sortable:true,class:"note",filterControl:'input'},
+            {field:'option',title:'操作',class:"option"}
+        ]
     ];
+    var extra_columns = [],extra_data = []
     var res_data = []
 
     $(document).ready(function(){
@@ -93,9 +115,59 @@
         {% endif %}
         $('#toast').toast('hide');
     })
-
+    //加入统计数据
+    // /api/stemplate/get_by_permission/
+    // if e.obj == 'r'
+    //      扩展columns
+    //      /api/stemplate/get_instances/
+    //      追加数据
+    //      重建表格
     $.ajax({
         async:false,
+        url:'/api/stemplate/get_by_permission/',
+        type:'GET',
+        success:(data) => {
+            //option = {field:'option',title:'操作',class:"option"}
+            data['sTemplate'].forEach(element => {
+                if(element.obj == 'r'){
+                    columns_ex = translateDatatypes(element.datatypes,element.id,element.title)
+                    columns[0] = globalThis.columns[0].concat(columns_ex['title'])
+                    columns[1] = globalThis.columns[1].concat(columns_ex['fields'])
+                    //globalThis.extra_columns = globalThis.extra_columns.concat(translateDatatypes(element.datatypes,element.id,element.title))
+                    $.ajax({
+                        async:false,
+                        url:'/api/stemplate/'+element.id+'/get_instances/',
+                        type:'GET',
+                        success:(data) => {
+                            data['instances'].forEach(element => {
+                                //console.log(element.object_pk)
+                                var temp = translateInstances(element.data,element.template,element.object_pk)
+                                extra_data = extra_data.concat(temp)
+                            });
+                            //console.log(extra_data)
+                            $('#loading').removeClass('d-flex')
+                            $('#loading').hide()
+                        },
+                        error:(error) => {
+                            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                    .addClass('border-danger text-danger')
+                            $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+                            $('#toast').toast('show');
+                        }
+                    })
+                }
+            });
+            //globalThis.extra_columns = globalThis.extra_columns.concat(option)
+        },
+        error:(error) => {
+            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+            $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+            $('#toast').toast('show');
+        }
+    })
+
+    $.ajax({
         url:'/api/residents/get_by_permission/',
         type:'GET',
         success:(data) => {
@@ -119,8 +191,47 @@
                 i++;
                 globalThis.global_index = i;
             });
+            extra_data.forEach(element => {
+                try{
+                    Object.assign(res_data[res_data.findIndex(x => x.id == element.id)],element)
+                }
+                catch{
+                    //不用处理
+                }
+            });
+            //console.log(res_data.find(x => x.id == extra_data[1].id))
+            //console.log(res_data.findIndex(x => x.id == extra_data[1].id))
+            //console.log(res_data[18])
+            $('#table').bootstrapTable('load',res_data)
+            $('#table').bootstrapTable('hideLoading')
+        },
+        error:(error) => {
+            $('#toast').removeClass('border-success text-success border-danger text-danger')
+                    .addClass('border-danger text-danger')
+            $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+            $('#toast').toast('show');
         }
     });
+
+    //var f_columns = globalThis.columns.concat(globalThis.extra_columns)
+    /*Object.entries(extra_data).forEach(e => {
+        console.log(e)
+    })*/
+    //var f_data = res_data.concat(globalThis.extra_data)
+    $('#table').bootstrapTable({
+        columns: columns,
+        data:res_data,
+        exportTypes: ['xlsx'],
+        onPostBody:function(){
+            {% if 'resident.can_c/d_resident' in perms %}
+            load_Form()
+            {% endif %}
+            $('button[name="clearSearch"]').text("清空")
+            $('button[aria-label="Columns"]').html(['<i class="fa-solid fa-list"></i>'].join(''))
+            $('button[aria-label="Export"]').html(['<i class="fa-solid fa-download"></i>'].join(''))
+        }
+    })
+    $('#table').bootstrapTable('hideColumn', 'id')
 
     function operaFormatter(id,index){
         return [
@@ -136,17 +247,8 @@
             '</div>'
         ].join('')
     }
-    $('#table').bootstrapTable({
-        columns: columns,
-        data:res_data,
-        onPostBody:function(){
-            {% if 'resident.can_c/d_resident' in perms %}
-            load_Form()
-            {% endif %}
-            $('button[name="clearSearch"]').text("清空")
-            $('button[aria-label="Columns"]').html(['<i class="fa-solid fa-list"></i>'].join(''))
-        }
-    })
+
+    $('#table').bootstrapTable('showLoading')
     //$('#table').bootstrapTable('hideColumn','id')
 </script>
 

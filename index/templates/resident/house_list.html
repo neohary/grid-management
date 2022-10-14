@@ -7,6 +7,11 @@
     <link href="{% static 'css/resident_list.css' %}" rel="stylesheet">
     <script src="{% static 'js/bootstrap-table-filter-control.min.js' %}"></script>
 </head>
+<style>
+    .detail-view:hover{
+        background-color: white !important;
+    }
+</style>
 <title>住户总览 - {{title}}</title>
 <!-- 模态框 -->
 <div class="modal fade" id="myModal">
@@ -66,9 +71,9 @@
         {field:'icon',title:' ',class:"icon",formatter:iconFormatter()},
         {field:'village_name',title:'村庄',sortable:true,class:"village_name",filterControl:'select'},
         {field:'grid_name',title:'微网格',sortable:true,class:"grid_name",filterControl:'input'},
-        {field:'mgridID',title:'户号',sortable:true,class:"mgridID"},
-        {field:'population',title:'人口',sortable:true,class:"population"},
-        {field:'holder_name',title:'户主',sortable:true,class:"holder_name"},
+        {field:'mgridID',title:'户号',sortable:true,class:"mgridID",filterControl:'input'},
+        {field:'population',title:'人口',sortable:true,class:"population",filterControl:'input'},
+        {field:'holder_name',title:'户主',sortable:true,class:"holder_name",filterControl:'input'},
         {field:'option',title:'操作',class:"option"}
     ]
     var house_data = []
@@ -77,20 +82,8 @@
         $('#toast').toast('hide');
     })
 
-    function iconFormatter(){
-        return [
-            '<i class="fa-solid fa-caret-down"></i>'
-        ].join('')
-    }
-
-    function namelinkFormatter(id,name){
-        return [
-            '<a href="/resident/' + id +'">'+ name +'</a>'
-        ].join('')
-    }
-
     $.ajax({
-        async:false,
+
         url:'/api/houses/get_by_permission/',
         type:'GET',
         success:(data) => {
@@ -107,6 +100,8 @@
                 }
                 i++;
             });
+            $('#table').bootstrapTable('load',house_data)
+            $('#table').bootstrapTable('hideLoading')
         }
     })
 
@@ -115,17 +110,66 @@
         detail.id = "d_table"
         element.append(detail)
         var columns = [
-            {field:'id',title:'编号',class:"id"},
-            {field:'name',title:'姓名',sortable:true,class:"name"},
-            {field:'sex',title:'性别',sortable:true,class:"sex"},
-            {field:'age',title:'年龄',sortable:true,class:"age"},
-            {field:'phone',title:'电话',sortable:true,class:"phone"},
-            {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident"},
-            {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation"},
-            {field:'note',title:'备注',sortable:true,class:"note"},
-        ]
-        var res_data = []
+            [
+                {title: '基本信息',colspan: 8,align: 'center'}
+            ],
+            [
+                {field:'id',title:'编号',class:"id-x"},
+                {field:'name',title:'姓名',sortable:true,class:"name"},
+                {field:'sex',title:'性别',sortable:true,class:"sex"},
+                {field:'age',title:'年龄',sortable:true,class:"age"},
+                {field:'phone',title:'电话',sortable:true,class:"phone"},
+                {field:'isLocalResident',title:'是否常住',sortable:true,class:"isLocalResident"},
+                {field:'outLocation',title:'在外地点',sortable:true,class:"outLocation"},
+                {field:'note',title:'备注',sortable:true,class:"note"}
+            ]
+        ];
+        var res_data = [],extra_data = []
+
+        //追加数据
         $.ajax({
+            async:false,
+            url:'/api/stemplate/get_by_permission/',
+            type:'GET',
+            success:(data) => {
+                data['sTemplate'].forEach(element => {
+                    if(element.obj == 'r'){
+                        columns_ex = translateDatatypes(element.datatypes,element.id,element.title)
+                        columns[0] = columns[0].concat(columns_ex['title'])
+                        columns[1] = columns[1].concat(columns_ex['fields'])
+                        $.ajax({
+                            async:false,
+                            url:'/api/stemplate/'+element.id+'/get_instances/',
+                            type:'GET',
+                            success:(data) => {
+                                data['instances'].forEach(element => {
+                                    //console.log(element.object_pk)
+                                    var temp = translateInstances(element.data,element.template,element.object_pk)
+                                    extra_data = extra_data.concat(temp)
+                                });
+                                //$('#loading').removeClass('d-flex')
+                                //$('#loading').hide()
+                            },
+                            error:(error) => {
+                                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                                        .addClass('border-danger text-danger')
+                                $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+                                $('#toast').toast('show');
+                            }
+                        })
+                    }
+                });
+            },
+            error:(error) => {
+                $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                $('#toast .toast-body').text("读取数据失败："+error.responseJSON.message)
+                $('#toast').toast('show');
+            }
+        })
+
+        $.ajax({
+            async:false,
             url:'/api/houses/'+row.id+'/get_residents/',
             type:'GET',
             success:(data) => {
@@ -143,11 +187,24 @@
                     }
                     i++;
                 });
-                var table = $('#d_table').bootstrapTable({
+                //console.log(extra_data)
+                extra_data.forEach(element => {
+                    //console.log(res_data.findIndex(x => x.id == element.id))
+                    try{
+                        Object.assign(res_data[res_data.findIndex(x => x.id == element.id)],element)
+                    }
+                    catch{
+                        //不用处理
+                    }
+                });
+                
+                var $table = $('#d_table').bootstrapTable({
                     columns :columns,
-                    data: res_data
+                    data: res_data,
+                    //classes:'table table-bordered table-hover table-sm'
                 })
-                return table.outerHTML
+                $table.bootstrapTable('hideColumn', 'id')
+                return $table.outerHTML
             }
         })
     }
@@ -170,11 +227,17 @@
     $('#table').bootstrapTable({
         columns: columns,
         data: house_data,
+        classes:'table table-bordered',
         onPostBody:function() {
             $('button[name="clearSearch"]').text("清空")
-            $('button[aria-label="Columns"]').html(['<i class="fa-solid fa-list"></i>'].join(''))
+            $('thead > tr > th.village_name > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+            $('thead > tr > th.grid_name > div.fht-cell > div.filter-control > input').attr('placeholder','筛选微网格')
+            $('thead > tr > th.mgridID > div.fht-cell > div.filter-control > input').attr('placeholder','筛选户号')
+            $('thead > tr > th.population > div.fht-cell > div.filter-control > input').attr('placeholder','筛选人口')
+            $('thead > tr > th.holder_name > div.fht-cell > div.filter-control > input').attr('placeholder','筛选户主')
         }
     })
+    $('#table').bootstrapTable('showLoading')
 </script>
 
 {% endblock %}

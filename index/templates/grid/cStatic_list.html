@@ -53,6 +53,7 @@
         data-page-size="15"
         data-page-list="[10, 15, 20, 50, 100, All]"
         data-filter-control="true"
+        data-show-search-clear-button="true"
         >
 
     </table>
@@ -69,11 +70,11 @@
 <script>
     var columns = [
         {field:'id',title:'编号',class:"id"},
-        {field:'title',title:'标题',sortable:true,class:"title"},
+        {field:'title',title:'标题',sortable:true,class:"title",filterControl:'input'},
         {field:'range_display',title:'范围',sortable:true,class:"range",filterControl:'select'},
-        {field:'object_display',title:'对象',sortable:true,class:"object"},
-        {field:'creater_display',title:'创建者',sortable:true,class:"creater"},
-        {field:'create_date',title:'创建日期',sortable:true,class:"create_date"},
+        {field:'object_display',title:'对象',sortable:true,class:"object",filterControl:'select'},
+        {field:'creater_display',title:'创建者',sortable:true,class:"creater",filterControl:'input'},
+        {field:'create_date',title:'创建日期',sortable:true,class:"create_date",filterControl:'select'},
         {field:'status',title:'状态',sortable:true,class:"status"},
         {field:'option',title:'操作',class:"option"}
     ]
@@ -153,7 +154,7 @@
     }
 
     $.ajax({
-        async:false,
+        //async:false,
         url:'/api/stemplate/get_by_permission/',
         type:'GET',
         success:(data) => {
@@ -171,13 +172,24 @@
                 }
                 i++;
             });
+            $('#table').bootstrapTable('load',stc_data)
+            $('#table').bootstrapTable('hideLoading')
         }
     })
 
     $('#table').bootstrapTable({
         columns: columns,
         data: stc_data,
+        onPostBody:function() {
+            $('button[name="clearSearch"]').text("清空")
+            $('thead > tr > th.range > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+            $('thead > tr > th.object > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+            $('thead > tr > th.title > div.fht-cell > div.filter-control > input').attr('placeholder','筛选标题')
+            $('thead > tr > th.creater > div.fht-cell > div.filter-control > input').attr('placeholder','筛选创建者')
+            $('thead > tr > th.create_date > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+        }
     })
+    $('#table').bootstrapTable('showLoading')
 
 </script>
 

@@ -1,0 +1,18 @@
+{% extends "base_generic.html" %}
+{% block content %}
+{% load static %}
+<title>处理结果 - {{title}}</title>
+
+<div class="py-3 px-lg-5">
+    <h2>批量添加人员信息</h2>
+    <p>处理结果</p>
+</div>
+
+<div class="px-lg-5 d-grid">
+    <div>向 {{house_count}} 个住户添加了 {{resident_count}} 条人员信息，其中有 {{empty_house_count}} 户空户</div>
+    {% for message in messages %}
+    <div>{{message}}</div>
+    {% endfor %}
+    <a href="{% url 'batch-add-residents-html' %}" class="my-3 btn btn-primary">返回</a>
+</div>
+{% endblock %}

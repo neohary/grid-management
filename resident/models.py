@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from datetime import datetime
-from grid.models import MicroGrid,Village
+from grid.models import MicroGrid,Village,CustomStaticsInstance
 from django.dispatch import receiver
 from django.db.models.signals import pre_save,post_save,post_delete
 from rest_framework.response import Response
@@ -24,7 +24,8 @@ def IDValidator(value):
 
 class Resident(models.Model):
     name = models.CharField(max_length=20,blank=False,null=False,help_text="姓名")
-    IDnumber = models.CharField(max_length=18,validators=[IDValidator],blank=False,help_text="身份证")
+    IDnumber = models.CharField(max_length=18,validators=[IDValidator],blank=True,null=True,help_text="身份证")
+    r_age = models.IntegerField(blank=True,null=True)
     SEX_CHOICES = (
         ('m','男'),
         ('f','女'),
@@ -52,10 +53,13 @@ class Resident(models.Model):
 
     @property
     def age(self):
-        try:
-            age = int(datetime.now().year) - int(self.IDnumber[6:10])
-        except:
-            age = ''
+        if self.IDnumber:
+            try:
+                age = int(datetime.now().year) - int(self.IDnumber[6:10])
+            except:
+                age = ''
+        else:
+            age = self.r_age
             
         return age
     
@@ -72,6 +76,10 @@ class Resident(models.Model):
     
     def delete(self):
         #self.IDnumber = 0
+        statics = CustomStaticsInstance.objects.filter(resident=self).exclude(deleted=True)
+        if statics:
+            for s in statics:
+                s.delete()
         self.deleted = True
         self.save()
 
@@ -132,5 +140,9 @@ class House(models.Model):
         return count
     
     def delete(self):
+        statics = CustomStaticsInstance.objects.filter(house=self).exclude(deleted=True)
+        if statics:
+            for s in statics:
+                s.delete()
         self.deleted = True
         self.save()

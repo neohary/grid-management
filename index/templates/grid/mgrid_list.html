@@ -54,6 +54,7 @@
         data-detail-formatter="mgridDetailFormatter"
         data-show-footer="true"
         data-filter-control="true"
+        data-show-search-clear-button="true"
         >
     </table>
 </div>
@@ -63,9 +64,9 @@
         {field:'id',title:'编号',class:"id"},
         {field:'icon',title:' ',class:"icon",formatter:iconFormatter()},
         {field:'village_name',title:'村庄',sortable:true,class:"village_name",filterControl:'select'},
-        {field:'name',title:'微网格名称',sortable:true,class:"name"},
-        {field:'houses_count',title:'户数',sortable:true,class:"houses"},
-        {field:'pop_count',title:'人口',sortable:true,class:"pop"},
+        {field:'name',title:'微网格名称',sortable:true,class:"name",filterControl:'input'},
+        {field:'houses_count',title:'户数',sortable:true,class:"houses",filterControl:'input'},
+        {field:'pop_count',title:'人口',sortable:true,class:"pop",filterControl:'input'},
         {field:'color',title:'颜色',sortable:true,class:"color"},
         {field:'option',title:'操作',class:"option"}
     ]
@@ -92,7 +93,7 @@
     var global_index
 
     $.ajax({
-        async:false,
+        //async:false,
         url:'/api/mgrid/get_by_permission/',
         type:'GET',
         success:(data) => {
@@ -110,6 +111,8 @@
                 i++;
             });
             globalThis.global_index = i
+            $('#table').bootstrapTable('load',mgrid_data)
+            $('#table').bootstrapTable('hideLoading')
         }
     })
 
@@ -181,6 +184,7 @@
             {% endif %}
         }
     })
+    $('#table').bootstrapTable('showLoading')
 
     function confirmDelete(id,index){
         var datacol = $('tr[data-index='+ index +']');
@@ -224,6 +228,10 @@
     }
 
     function load_Form(){
+        $('tfoot > tr > th.icon > div.th-inner').text("+")
+        $('tfoot > tr > th.houses > div.th-inner').text("户数")
+        $('tfoot > tr > th.pop > div.th-inner').text("人口")
+
         resetGlobalParams()
         $('tfoot > tr > th.village_name').html(villageFooter())
         villageListener()
@@ -236,6 +244,12 @@
 
         $('tfoot > tr > th.option').html(optionFooter())
         optionListener()
+
+        $('button[name="clearSearch"]').text("清空")
+        $('thead > tr > th.village_name > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+        $('thead > tr > th.name > div.fht-cell > div.filter-control > input').attr('placeholder','筛选微网格')
+        $('thead > tr > th.houses > div.fht-cell > div.filter-control > input').attr('placeholder','筛选户数')
+        $('thead > tr > th.pop > div.fht-cell > div.filter-control > input').attr('placeholder','筛选人口')
     }
 
     function villageFooter(){

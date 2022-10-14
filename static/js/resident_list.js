@@ -1,17 +1,20 @@
 function get_bool(bool){
-    var badgediv = document.createElement('span')
-    var badge = document.createElement('i')
+    var value = document.createElement('div')
+    //var badgediv = document.createElement('span')
+    //var badge = document.createElement('i')
     if(bool == false){
-        badgediv.classList.add('bg-danger','badge','rounded-circle','d-flex','justify-content-center')
-        badge.classList.add('fa-solid','fa-xmark','align-self-center')
+        //badgediv.classList.add('bg-danger','badge','rounded-circle','d-flex','justify-content-center')
+        //badge.classList.add('fa-solid','fa-xmark','align-self-center')
+        return "否"
     }else{
-        badgediv.classList.add('bg-success','rounded','badge','rounded-circle','d-flex','justify-content-center')
-        badge.classList.add('fa-solid','fa-check','align-self-center')
+        //badgediv.classList.add('bg-success','rounded','badge','rounded-circle','d-flex','justify-content-center')
+        //badge.classList.add('fa-solid','fa-check','align-self-center')
+        return "是"
     }
-    badgediv.style.setProperty('width',"24px")
-    badgediv.style.setProperty('height',"24px")
-    badgediv.appendChild(badge)
-    return badgediv.outerHTML
+    //badgediv.style.setProperty('width',"24px")
+    //badgediv.style.setProperty('height',"24px")
+    //badgediv.appendChild(badge)
+    return value.outerHTML
 }
 
 function nameFooter(){
@@ -317,21 +320,33 @@ function outlocationListener(){
     })
 }
 
+var housedata;
+
+$.ajax({
+    url: '/api/houses/get_by_permission/',
+    type:"GET",
+    dataType:"json",
+    success:(data) => {
+        //console.log(data)
+        housedata = data['houses']
+    }
+})
+
 function houseListener(){
-    $.ajax({
-        url: '/api/houses/get_by_permission/',
-        type:"GET",
-        dataType:"json",
-        success:(data) => {
-            $('#houselist').empty()
-            data.houses.forEach(element => {
-                var option = document.createElement('option')
-                option.setAttribute('value',element.id)
-                option.text = element.house_name
-                $('#houselist').append(option)
-            })
-        }
-    })
+    
+    $('#houselist').empty()
+    try{
+        housedata.forEach(element => {
+            var option = document.createElement('option')
+            option.setAttribute('value',element.id)
+            option.text = element.house_name
+            $('#houselist').append(option)
+        });
+    }
+    catch(error){
+        //不用处理
+    }
+
     $('#form-house-input').blur(function(){
         if($(this).val() != ''){
             var id = $(this).val()
@@ -366,7 +381,53 @@ function noteFooterListener(){
     })
 }
 
+function translateDatatypes(datatypes,id,title) {
+    var result = {}
+    var i_title = []
+    var fields = []
+    var i = 0;
+    i_title.push({title:title,colspan:Object.entries(datatypes).length,align:'center'})
+    Object.entries(datatypes).forEach(e => {
+        fields[i] = {field:id+'-'+e[0],title:e[1][0],sortable:true,class:id+'-'+e[0]}
+        i++;
+    })
+    result['title'] = i_title
+    result['fields'] = fields
+
+    return result
+}
+
+function translateInstances(data,t_id,obj_pk) {
+    var result = []
+    var i = 0;
+    var temp = {}
+    temp['id'] = obj_pk
+    //console.log("模板: "+t_id+' '+'对象: '+obj_pk)
+    Object.entries(data).forEach(e => {
+        //field名 = t_id-e[0]
+        //内容 = e[1]
+        var field = t_id+'-'+e[0]
+        if(typeof(e[1]) == "boolean"){
+            if(e[1] == true){
+                e[1] = "是"
+                //e[1] = ['<span class="bg-success rounded badge rounded-circle d-flex justify-content-center" style="width: 24px; height: 24px;"><i class="fa-solid fa-check align-self-center"></i></span>'].join('')
+            }else{
+                e[1] = "否"
+                //e[1] = ['<span class="bg-danger badge rounded-circle d-flex justify-content-center" style="width: 24px; height: 24px;"><i class="fa-solid fa-xmark align-self-center"></i></span>'].join('')
+            }
+        }
+        temp[field] = e[1]
+    })
+    result = result.concat(temp)
+    //console.log('-----------------')
+    return temp
+}
+
 function load_Form(){
+    $('tfoot > tr > th.village > div.th-inner').text("村庄")
+
+    $('tfoot > tr > th.mgrid > div.th-inner').text("微网格")
+
     $('tfoot > tr > th.name').html(nameFooter())
     nameFooterListener()
 
@@ -393,4 +454,15 @@ function load_Form(){
 
     $('tfoot > tr > th.option').html(optionFooter())
     optionListener()
+
+    $('thead > tr > th.mgrid > div.fht-cell > div.filter-control > input').attr('placeholder','筛选微网格')
+    $('thead > tr > th.name > div.fht-cell > div.filter-control > input').attr('placeholder','筛选姓名')
+    $('thead > tr > th.age > div.fht-cell > div.filter-control > input').attr('placeholder','筛选年龄')
+    $('thead > tr > th.phone > div.fht-cell > div.filter-control > input').attr('placeholder','筛选电话')
+    $('thead > tr > th.outLocation > div.fht-cell > div.filter-control > input').attr('placeholder','筛选在外地点')
+    $('thead > tr > th.b_house > div.fht-cell > div.filter-control > input').attr('placeholder','筛选住户')
+    $('thead > tr > th.note > div.fht-cell > div.filter-control > input').attr('placeholder','筛选备注')
+    $('thead > tr > th.village > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+    $('thead > tr > th.sex > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+    $('thead > tr > th.isLocalResident > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
 }

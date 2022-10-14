@@ -50,21 +50,22 @@
         data-page-size="15"
         data-page-list="[10, 15, 20, 50, 100, All]"
         data-filter-control="true"
+        data-show-search-clear-button="true"
         >
     </table>    
 </div>
 
 <script>
-
+    $('#table').bootstrapTable('showLoading')
     $(document).ready(function(){
         $('#toast').toast('hide');
     })
 
     var columns = [
                 {field:'id',title:'编号',class:"id"},
-                {field:'username',title:'用户名',sortable:true,class:"username"},
-                {field:'phone',title:'手机号',sortable:true,class:"phone"},
-                {field:'email',title:'邮箱',sortable:true,class:"email"},
+                {field:'username',title:'用户名',sortable:true,class:"username",filterControl:'input'},
+                {field:'phone',title:'手机号',sortable:true,class:"phone",filterControl:'input'},
+                {field:'email',title:'邮箱',sortable:true,class:"email",filterControl:'input'},
                 {field:'village',title:'村庄',sortable:true,class:"village",filterControl:'select'},
                 {field:'mgrid',title:'微网格',sortable:true,class:"mgrid",filterControl:'input'},
                 {field:'group',title:'权限',sortable:true,class:"group"},
@@ -99,9 +100,15 @@
                 columns: columns,
                 data:res_data,
                 onPostBody:function(){
-                    
+                    $('button[name="clearSearch"]').text("清空")
+                    $('thead > tr > th.village > div.fht-cell > div.filter-control > select > option:first-child').text('全部')
+                    $('thead > tr > th.username > div.fht-cell > div.filter-control > input').attr('placeholder','筛选用户名')
+                    $('thead > tr > th.phone > div.fht-cell > div.filter-control > input').attr('placeholder','筛选手机号')
+                    $('thead > tr > th.email > div.fht-cell > div.filter-control > input').attr('placeholder','筛选邮箱')
+                    $('thead > tr > th.mgrid > div.fht-cell > div.filter-control > input').attr('placeholder','筛选微网格')
                 }
             })
+            $('#table').bootstrapTable('hideLoading')
         },
         error:(error) => {
             $('#table').bootstrapTable({

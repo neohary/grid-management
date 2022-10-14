@@ -163,6 +163,10 @@
                 },
                 error:(error) => {
                     console.log(error)
+                    $('#toast').removeClass('border-success text-success border-danger text-danger')
+                        .addClass('border-danger text-danger')
+                    $('#toast .toast-body').text("创建失败："+error.responseJSON.message)
+                    $('#toast').toast('show');
                 }
             })
         }else{
@@ -171,6 +175,7 @@
             console.log(object_data)
             console.log(datatypes_data)
             //信息框弹窗提示
+            
         }
     }
 

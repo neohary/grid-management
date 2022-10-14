@@ -55,7 +55,7 @@ class ResidentDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resident
-        fields = "__all__"
+        fields = ['id','name','IDnumber','phone','isLocalResident','outLocation','note','isholder','house_name','age','sex','sex_display','village','mgrid']
 
 class HouseDetailSerializer(serializers.ModelSerializer):
     house_name = serializers.SerializerMethodField('get_house_name')

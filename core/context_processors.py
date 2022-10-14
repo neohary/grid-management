@@ -78,7 +78,7 @@ def get_live_static_count(request):
             count = CustomStaticsTemplate.objects.filter(Q(village=request.user.profile.village) | Q(range='a')).exclude(closed=True).exclude(deleted=True).count()
         except:
             count = None
-        print(count)
+        #print(count)
         return {'live_static_count':count}
     else:
         return {'live_static_count':None}
