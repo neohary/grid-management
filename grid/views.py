@@ -19,6 +19,7 @@ from grid import serializer
 
 from notifications.signals import notify
 from django.db.models import Q
+from django.db import transaction
 # Create your views here.
 def village_changelog(object,context,behaviour,user):
     VillageChangeLog.objects.create(
@@ -80,6 +81,7 @@ class VillageViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         if request.user.has_perm('grid.can_c/d_village'):
             serializer = VillageSerializer(data=request.data)
@@ -101,6 +103,7 @@ class VillageViewSet(viewsets.ViewSet):
                 return Response({'message':'已存在同名村庄'},status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('grid.can_c/d_village'):
             village = Village.objects.get(pk=pk)
@@ -124,6 +127,7 @@ class VillageViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def update(self,request,pk):
         village = get_object_or_404(Village,pk=pk)
         if request.user.has_perm('grid.can_edit_village'):
@@ -236,6 +240,7 @@ class MicroGridViewSet(viewsets.ViewSet):
                 return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         if request.user.has_perm('grid.can_c/d_mgrid'):
             serializer = MicroGridDetailSerializer(data=request.data)
@@ -254,6 +259,7 @@ class MicroGridViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('grid.can_c/d_mgrid'):
             obj = MicroGrid.objects.get(pk=pk)
@@ -268,7 +274,7 @@ class MicroGridViewSet(viewsets.ViewSet):
                         house.delete()
 
                     users = User.objects.filter(profile__mgrid=obj)
-                    grid = MicroGrid.objects.filter(village=obj.village).exclude(deleted=True).latest()
+                    grid = MicroGrid.objects.filter(village=obj.village).exclude(deleted=True).first()
                     for user in users:
                         if grid:
                             user.profile.mgrid = grid
@@ -287,6 +293,7 @@ class MicroGridViewSet(viewsets.ViewSet):
                 return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def update(self,request,pk):
         if request.user.has_perm('grid.can_edit_mgrid'):
             obj = get_object_or_404(MicroGrid,pk=pk)
@@ -387,6 +394,7 @@ class sTemplateViewSet(viewsets.ViewSet):
                 return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         if request.user.has_perm('grid.can_cd_stemplate'):
             request.data['creater'] = request.user.pk
@@ -419,6 +427,7 @@ class sTemplateViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('grid.can_cd_stemplate'):
             obj = CustomStaticsTemplate.objects.get(pk=pk)
@@ -468,6 +477,7 @@ class sTemplateViewSet(viewsets.ViewSet):
                 return Response({"error":"request not found"},status=status.HTTP_404_NOT_FOUND)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     @action(detail=True,methods=['delete'])
     def close(self,request,pk):
         if request.user.has_perm('grid.can_cd_stemplate'):
@@ -503,6 +513,7 @@ class sInstanceViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         #检测object pk和template pk的唯一性，如果重复则调用update
         if request.user.has_perm('grid.can_c/d_sinstance'):
@@ -534,6 +545,7 @@ class sInstanceViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('grid.can_c/d_sinstance'):
             obj = CustomStaticsInstance.objects.get(pk=pk)
@@ -550,6 +562,7 @@ class sInstanceViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def update(self,request,pk):
         if request.user.has_perm('grid.can_edit_sinstance'):
             obj = get_object_or_404(CustomStaticsInstance,pk=pk)

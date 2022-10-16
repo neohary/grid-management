@@ -100,6 +100,7 @@ class ResidentViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         if request.user.has_perm('resident.can_c/d_resident'):
             serializer = ResidentDetailSerializer(data=request.data)
@@ -122,6 +123,7 @@ class ResidentViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('resident.can_c/d_resident'):
             resident = Resident.objects.get(pk=pk)
@@ -137,6 +139,7 @@ class ResidentViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def update(self,request,pk):
         if request.user.has_perm('resident.can_edit_resident'):
             resident = get_object_or_404(Resident,pk=pk)
@@ -229,6 +232,7 @@ class HouseViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         #print(request.data)
         if request.user.has_perm('resident.can_c/d_house'):
@@ -259,6 +263,7 @@ class HouseViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def destroy(self,request,pk):
         if request.user.has_perm('resident.can_c/d_house'):
             house = House.objects.get(pk=pk)
@@ -279,6 +284,7 @@ class HouseViewSet(viewsets.ViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def update(self,request,pk):
         if request.user.has_perm('resident.can_edit_house'):
             house = get_object_or_404(House,pk=pk)
@@ -342,6 +348,7 @@ class HouseViewSet(viewsets.ViewSet):
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True,methods=['post'])
+    @transaction.atomic
     def set_holder(self,request,pk):
         if request.user.has_perms(['resident.can_edit_house','resident.can_edit_resident']):
             house = get_object_or_404(House,pk=pk)

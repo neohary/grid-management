@@ -18,6 +18,7 @@ from .models import UserApproval
 from notifications.signals import notify
 from resident.views import find
 from grid.models import *
+from django.db import transaction
 # Create your views here.
 
 class UserViewSet(viewsets.ViewSet):
@@ -55,7 +56,9 @@ class UserViewSet(viewsets.ViewSet):
         serializer = UserSerializer(queryset,many=True)
         return Response({'users':serializer.data},status=status.HTTP_200_OK)
     
+    
     @action(detail=True,methods=['delete'])
+    @transaction.atomic
     def kick(self,request,pk):
         if request.user.has_perm('grid.can_edit_user'):
             obj = get_object_or_404(User,pk=pk)
@@ -72,7 +75,9 @@ class UserViewSet(viewsets.ViewSet):
             return Response({'message':'success'},status=status.HTTP_200_OK)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    
     @action(detail=True,methods=['post'])
+    @transaction.atomic
     def set_group(self,request,pk):
         if request.user.has_perm('grid.can_edit_user'):
             obj = get_object_or_404(User,pk=pk)
@@ -97,6 +102,7 @@ class UserViewSet(viewsets.ViewSet):
             return Response({'message':'success'},status=status.HTTP_200_OK)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
+    @transaction.atomic
     def update(self,request,pk):
         user = get_object_or_404(User,pk=pk)
         if request.user.has_perm('grid.can_edit_user') or (request.user == user):
@@ -145,6 +151,8 @@ def check(email):
         return False
 
 class LoginView(APIView):
+
+    @transaction.atomic
     def post(self,request):
         #print(request.data)
         username = request.data['username']
@@ -171,6 +179,8 @@ class LoginView(APIView):
         return Response({'message':"未知错误"},status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
+
+    @transaction.atomic
     def post(self,request):
         if request.user.is_authenticated:
             logout(request)
@@ -197,6 +207,7 @@ class GroupViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
     @action(detail=False,methods=['get'])
+    @transaction.atomic
     def get_by_permission(self,request):
         if request.user.is_superuser:
             queryset = Group.objects.all().exclude(groupprofile__avaliable=False)
@@ -227,6 +238,7 @@ class UserApprovalViewSet(viewsets.ViewSet):
             return Response(serializer.data)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def create(self,request):
         request.data['user'] = request.user.pk
         if request.user.has_perm('core.can_c/d_approvals'):
@@ -242,6 +254,7 @@ class UserApprovalViewSet(viewsets.ViewSet):
                 return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
     
+    @transaction.atomic
     def destroy(self,request,pk):
         obj = get_object_or_404(UserApproval,pk=pk)
         if request.user.has_perm('core.can_c/d_approvals') and (obj.user == request.user):
@@ -260,6 +273,7 @@ class UserApprovalViewSet(viewsets.ViewSet):
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True,methods=['post'])
+    @transaction.atomic
     def approve(self,request,pk):
         if request.user.has_perm('core.can_deal_approvals'):
             obj = get_object_or_404(UserApproval,pk=pk)
