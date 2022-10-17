@@ -406,32 +406,32 @@ def batch_add_residents_by_file(request):
                 for index,row in df.iterrows():
                     if not pd.isnull(row[0]):
                         if isinstance(row[0],int):
-                            '''
+                            
                             try:
                                 house = houses.filter(mgridID=row[0]).get()
                             except House.DoesNotExist:
                                 messages.append("[放弃] 处理失败，{} 第 {} 户不存在，请手动创建该微网格中的所有住户信息后再试。".format(mgrid.name,row[0]))
                                 return render(request,'resident/upload_result.html',{'messages':messages})
-                            '''
-                            house = row[0]#FAKE
-                            messages.append("[FAKE] 假装更新了house为第 {} 户".format(house))#FAKE
+                            
+                            #house = row[0]#FAKE
+                            #messages.append("[FAKE] 假装更新了house为第 {} 户".format(house))#FAKE
                             house_count += 1
 
                             obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
                             if obj:
                                 obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
-                                #obj.b_house = house
-                                #obj.isholder = True
-                                #obj.save()
-                                #messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
-                                messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house))#FAKE
+                                obj.b_house = house
+                                obj.isholder = True
+                                obj.save()
+                                messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
+                                #messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house))#FAKE
                                 resident_count += 1
                             else:
                                 if pd.isnull(row[2]) & bool(row[8] == "空户"):
                                     messages.append('[提示] 第 {} 户为空户，不做任何操作'.format(row[0],house))
                                     empty_house_count += 1
                                 else:
-                                    '''
+                                    
                                     Resident.objects.create(
                                         name=row[2],
                                         r_age=row[3],
@@ -443,8 +443,9 @@ def batch_add_residents_by_file(request):
                                         b_house=house,
                                         isholder=True
                                     )
-                                    '''
+                                    
                                     resident_count += 1
+                                    '''
                                     resident = Resident(
                                         name=row[2],
                                         r_age=row[3],
@@ -455,14 +456,13 @@ def batch_add_residents_by_file(request):
                                         note=row[8],
                                         isholder=True
                                     )#FAKE
-                                    #messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
-                                    messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(resident,house))#FAKE
+                                    '''
+                                    messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
+                                    #messages.append('[创建] 添加 {} 到第 {} 户，并指定为户主'.format(resident,house))#FAKE
                         else:
                             if row[0] == '合计':
                                 messages.append('[完成] 结束处理')
-                                #加入一些统计，添加了多少人，影响了多少户，多少户为空户
-                                context = {}
-                                
+
                                 return render(request,'resident/upload_result.html',
                                     {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
                             messages.append('[其他] 跳过第 {} 行'.format(i))
@@ -470,13 +470,13 @@ def batch_add_residents_by_file(request):
                         obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
                         if obj:
                             obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
-                            #obj.b_house = house
-                            #obj.isholder = False
-                            #obj.save()
+                            obj.b_house = house
+                            obj.isholder = False
+                            obj.save()
                             messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户'.format(row[2],house.mgridID))
                             resident_count += 1
                         else:
-                            '''
+                            
                             Resident.objects.create(
                                 name=row[2],
                                 r_age=row[3],
@@ -488,8 +488,9 @@ def batch_add_residents_by_file(request):
                                 b_house=house,
                                 isholder=False
                             )
-                            '''
+                            
                             resident_count += 1
+                            '''
                             resident = Resident(
                                 name=row[2],
                                 r_age=row[3],
@@ -500,10 +501,12 @@ def batch_add_residents_by_file(request):
                                 note=row[8],
                                 isholder=False
                             )#FAKE
-                            #messages.append('[创建] 添加 {} 到第 {} 户'.format(row[2],house.mgridID))
-                            messages.append('[创建] 添加 {} 到第 {} 户'.format(resident,house)) #FAKE
+                            '''
+                            messages.append('[创建] 添加 {} 到第 {} 户'.format(row[2],house.mgridID))
+                            #messages.append('[创建] 添加 {} 到第 {} 户'.format(resident,house)) #FAKE
                     i += 1
-                return render(request,'resident/upload_result.html',{'messages':messages})
+                return render(request,'resident/upload_result.html',
+                                    {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
         else:
             form = UploadFileForm()
         
