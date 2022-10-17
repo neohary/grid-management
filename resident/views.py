@@ -462,6 +462,7 @@ def batch_add_residents_by_file(request):
                         else:
                             if row[0] == '合计':
                                 messages.append('[完成] 结束处理')
+                                notify.send(sender=request.user,recipient=mgrid.village.get_managers(),verb="{} 批量添加了人员信息到 {}".format(request.user,mgrid.name))
 
                                 return render(request,'resident/upload_result.html',
                                     {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
@@ -505,6 +506,7 @@ def batch_add_residents_by_file(request):
                             messages.append('[创建] 添加 {} 到第 {} 户'.format(row[2],house.mgridID))
                             #messages.append('[创建] 添加 {} 到第 {} 户'.format(resident,house)) #FAKE
                     i += 1
+                notify.send(sender=request.user,recipient=mgrid.village.get_managers(),verb="{} 批量添加了人员信息到 {}".format(request.user,mgrid.name))
                 return render(request,'resident/upload_result.html',
                                     {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
         else:

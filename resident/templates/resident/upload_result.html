@@ -9,7 +9,9 @@
 </div>
 
 <div class="px-lg-5 d-grid">
+    {% if house_count %}
     <div>向 {{house_count}} 个住户添加了 {{resident_count}} 条人员信息，其中有 {{empty_house_count}} 户空户</div>
+    {% endif %}
     {% for message in messages %}
     <div>{{message}}</div>
     {% endfor %}
