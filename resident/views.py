@@ -388,6 +388,12 @@ def translateIsLocal(text):
     else:
         return False
 
+def get_or_nan(value):
+    if not pd.isnull(value):
+        return value
+    else:
+        return None
+
 @transaction.atomic
 def batch_add_residents_by_file(request):
     if request.user.is_superuser:
@@ -433,13 +439,13 @@ def batch_add_residents_by_file(request):
                                 else:
                                     
                                     Resident.objects.create(
-                                        name=row[2],
-                                        r_age=row[3],
-                                        sex=translateSex(row[4]),
-                                        phone=row[5],
-                                        isLocalResident=translateIsLocal(row[6]),
-                                        outLocation=row[7],
-                                        note=row[8],
+                                        name=get_or_nan(row[2]),
+                                        r_age=get_or_nan(row[3]),
+                                        sex=translateSex(get_or_nan(row[4])),
+                                        phone=get_or_nan(row[5]),
+                                        isLocalResident=translateIsLocal(get_or_nan(row[6])),
+                                        outLocation=get_or_nan(row[7]),
+                                        note=get_or_nan(row[8]),
                                         b_house=house,
                                         isholder=True
                                     )
@@ -479,13 +485,13 @@ def batch_add_residents_by_file(request):
                         else:
                             
                             Resident.objects.create(
-                                name=row[2],
-                                r_age=row[3],
-                                sex=translateSex(row[4]),
-                                phone=row[5],
-                                isLocalResident=translateIsLocal(row[6]),
-                                outLocation=row[7],
-                                note=row[8],
+                                name=get_or_nan(row[2]),
+                                r_age=get_or_nan(row[3]),
+                                sex=translateSex(get_or_nan(row[4])),
+                                phone=get_or_nan(row[5]),
+                                isLocalResident=translateIsLocal(get_or_nan(row[6])),
+                                outLocation=get_or_nan(row[7]),
+                                note=get_or_nan(row[8]),
                                 b_house=house,
                                 isholder=False
                             )
