@@ -425,10 +425,12 @@ def batch_add_residents_by_file(request):
 
                             obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
                             if obj:
-                                obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
+                                obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exclude(deleted=True).first()
                                 obj.b_house = house
                                 obj.isholder = True
                                 obj.save()
+                                house.holder = obj
+                                house.save()
                                 messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house.mgridID))
                                 #messages.append('[提示] {} 的信息已存在，将其转移到第 {} 户，并指定为户主'.format(row[2],house))#FAKE
                                 resident_count += 1
@@ -438,7 +440,7 @@ def batch_add_residents_by_file(request):
                                     empty_house_count += 1
                                 else:
                                     
-                                    Resident.objects.create(
+                                    obj = Resident.objects.create(
                                         name=get_or_nan(row[2]),
                                         r_age=get_or_nan(row[3]),
                                         sex=translateSex(get_or_nan(row[4])),
@@ -449,6 +451,8 @@ def batch_add_residents_by_file(request):
                                         b_house=house,
                                         isholder=True
                                     )
+                                    house.holder = obj
+                                    house.save()
                                     
                                     resident_count += 1
                                     '''
@@ -474,9 +478,9 @@ def batch_add_residents_by_file(request):
                                     {'messages':messages,'resident_count':resident_count,'house_count':house_count,'empty_house_count':empty_house_count})
                             messages.append('[其他] 跳过第 {} 行'.format(i))
                     else:
-                        obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
+                        obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exclude(deleted=True).exists()
                         if obj:
-                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).first()
+                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exclude(deleted=True).first()
                             obj.b_house = house
                             obj.isholder = False
                             obj.save()
