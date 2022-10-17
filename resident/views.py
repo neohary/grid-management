@@ -414,7 +414,7 @@ def batch_add_residents_by_file(request):
                         if isinstance(row[0],int):
                             
                             try:
-                                house = houses.filter(mgridID=row[0]).get()
+                                house = houses.filter(mgridID=row[0]).exclude(deleted=True).get()
                             except House.DoesNotExist:
                                 messages.append("[放弃] 处理失败，{} 第 {} 户不存在，请手动创建该微网格中的所有住户信息后再试。".format(mgrid.name,row[0]))
                                 return render(request,'resident/upload_result.html',{'messages':messages})
