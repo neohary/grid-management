@@ -423,7 +423,7 @@ def batch_add_residents_by_file(request):
                             #messages.append("[FAKE] 假装更新了house为第 {} 户".format(house))#FAKE
                             house_count += 1
 
-                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exists()
+                            obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exclude(deleted=True).exists()
                             if obj:
                                 obj = Resident.objects.filter(name=row[2]).filter(sex=translateSex(row[4])).exclude(deleted=True).first()
                                 obj.b_house = house
