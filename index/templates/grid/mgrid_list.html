@@ -293,30 +293,40 @@
     }
     var village_data,
         name_data,
-        color_data
+        color_data,
+        v_list
+
+    $.ajax({
+        async:false,
+        url:'/api/village/get_by_permission/',
+        type:'GET',
+        dataType:'json',
+        success:(data) => {
+            v_list = data['villages']
+            $('#form-village-input').empty()
+        },
+        error:(error) => {
+            console.log(error)
+        }
+    })
 
     function villageListener(){
-        $.ajax({
-            url:'/api/village/get_by_permission',
-            type:'GET',
-            dataType:'json',
-            success:(data) => {
-                $('#form-village-input').empty()
+        $('#form-village-input').empty()
+        var option = document.createElement("option")
+        option.setAttribute('value','')
+        option.innerText = '---'
+        $('#form-village-input').append(option)
+        try{
+            v_list.forEach(element => {
                 var option = document.createElement("option")
-                option.setAttribute('value','')
-                option.innerText = '---'
+                option.setAttribute('value',element.id)
+                option.innerText = element.name
                 $('#form-village-input').append(option)
-                data.villages.forEach(element => {
-                    var option = document.createElement("option")
-                    option.setAttribute('value',element.id)
-                    option.innerText = element.name
-                    $('#form-village-input').append(option)
-                });
-            },
-            error:(error) => {
-                console.log(error)
-            }
-        })
+            });
+        }catch(error){
+            //不用处理
+        }
+        
         $('#form-village-input').on('change',function(){
             if($(this).val() == ''){
                 $('.form-village .invalid-feedback').text("请选择村庄")

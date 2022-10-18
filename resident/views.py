@@ -135,7 +135,7 @@ class ResidentViewSet(viewsets.ViewSet):
                     'd',
                     request.user
                 )
-                notify.send(sender=request.user,recipient=request.user.profile.village.get_managers(),verb="{} 删除了人员 {}".format(request.user,obj))
+                notify.send(sender=request.user,recipient=request.user.profile.village.get_managers(),verb="{} 删除了人员 {}".format(request.user,resident))
             return Response(status=status.HTTP_204_NO_CONTENT)
         return Response({'message':'权限不足'},status=status.HTTP_400_BAD_REQUEST)
 
